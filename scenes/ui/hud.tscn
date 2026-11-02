@@ -1,0 +1,492 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1"]
+[ext_resource type="FontFile" path="res://assets/fonts/Bungee-Regular.woff2" id="2"]
+[ext_resource type="FontFile" path="res://assets/fonts/ChakraPetch-700.woff2" id="3"]
+[ext_resource type="Script" path="res://scripts/ui/hud_widget.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/coach_panel.gd" id="5"]
+
+[node name="Hud" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="TL" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0
+anchor_top = 0
+anchor_right = 0
+anchor_bottom = 0
+offset_left = 16
+offset_top = 14
+offset_right = 400
+offset_bottom = 120
+mouse_filter = 2
+
+[node name="Score" type="Label" parent="TL"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 40
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+theme_override_colors/font_shadow_color = Color(0.2902, 0.07059, 0.2118, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+
+[node name="Sub" type="HBoxContainer" parent="TL"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Mult" type="Label" parent="TL/Sub"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "×1"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.5608, 0.9137, 1, 1)
+
+[node name="Weapon" type="Label" parent="TL/Sub"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.5608, 0.9137, 1, 1)
+
+[node name="TC" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0
+anchor_right = 0.5
+anchor_bottom = 0
+offset_left = -260
+offset_top = 12
+offset_right = 260
+offset_bottom = 140
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="Timer" type="Label" parent="TC"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "3:00"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.9529, 0.8941, 1)
+theme_override_colors/font_shadow_color = Color(0.5608, 0.9137, 1, 0.4)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+
+[node name="WorldLbl" type="Label" parent="TC"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "IGNITION"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="IrisRow" type="HBoxContainer" parent="TC"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="Iris" type="Control" parent="TC/IrisRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(26, 26)
+script = ExtResource("4")
+kind = 5
+
+[node name="IrisTxt" type="Label" parent="TC/IrisRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7882, 0.6588, 1, 1)
+custom_minimum_size = Vector2(80, 0)
+
+[node name="Banner" type="Label" parent="TC"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(1, 0.3569, 0.2392, 1)
+theme_override_colors/font_outline_color = Color(1, 0.3137, 0.1961, 0.35)
+theme_override_constants/outline_size = 6
+
+[node name="TR" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 1
+anchor_top = 0
+anchor_right = 1
+anchor_bottom = 0
+offset_left = -320
+offset_top = 12
+offset_right = -16
+offset_bottom = 150
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 5
+
+[node name="StyleBox" type="VBoxContainer" parent="TR"]
+layout_mode = 2
+unique_name_in_owner = true
+theme_override_constants/separation = 5
+
+[node name="RankRow" type="HBoxContainer" parent="TR/StyleBox"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 10
+
+[node name="RankN" type="Label" parent="TR/StyleBox/RankRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "DRIFT"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+vertical_alignment = 2
+size_flags_vertical = 8
+
+[node name="RankL" type="Label" parent="TR/StyleBox/RankRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "D"
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 50
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+theme_override_colors/font_shadow_color = Color(0.1647, 0.03922, 0.1333, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+
+[node name="BarRow" type="HBoxContainer" parent="TR/StyleBox"]
+layout_mode = 2
+alignment = 2
+
+[node name="RankBar" type="Control" parent="TR/StyleBox/BarRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(170, 4)
+script = ExtResource("4")
+kind = 6
+color = Color(0.7255, 0.6627, 0.7882, 1)
+color2 = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="TurboRow" type="HBoxContainer" parent="TR/StyleBox"]
+layout_mode = 2
+unique_name_in_owner = true
+alignment = 2
+theme_override_constants/separation = 8
+
+[node name="TLabel" type="Label" parent="TR/StyleBox/TurboRow"]
+layout_mode = 2
+text = "TURBO"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="Cells" type="Control" parent="TR/StyleBox/TurboRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(105, 11)
+script = ExtResource("4")
+kind = 1
+
+[node name="TurboState" type="Label" parent="TR/StyleBox"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "LOCKED · REACH RANK B"
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="BL" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0
+anchor_top = 1
+anchor_right = 0
+anchor_bottom = 1
+offset_left = 16
+offset_top = -40
+offset_right = 300
+offset_bottom = -14
+grow_vertical = 0
+mouse_filter = 2
+alignment = 2
+
+[node name="HullRow" type="HBoxContainer" parent="BL"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HullLbl" type="Label" parent="BL/HullRow"]
+layout_mode = 2
+text = "HULL"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+custom_minimum_size = Vector2(44, 0)
+
+[node name="Hull" type="Control" parent="BL/HullRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 8)
+script = ExtResource("4")
+kind = 0
+color = Color(0.8627, 0.9137, 0.6627, 1)
+color2 = Color(1, 0.8235, 0.4784, 1)
+
+[node name="Thruster" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 1
+anchor_right = 0.5
+anchor_bottom = 1
+offset_left = -300
+offset_top = -100
+offset_right = 300
+offset_bottom = -14
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+alignment = 2
+theme_override_constants/separation = 6
+
+[node name="ThrRow" type="HBoxContainer" parent="Thruster"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="HomeChip" type="Control" parent="Thruster/ThrRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(46, 46)
+script = ExtResource("4")
+kind = 4
+
+[node name="Pips" type="Control" parent="Thruster/ThrRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 46)
+script = ExtResource("4")
+kind = 2
+
+[node name="BoomChip" type="Control" parent="Thruster/ThrRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(46, 46)
+script = ExtResource("4")
+kind = 3
+
+[node name="Prompt" type="Label" parent="Thruster"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.9569, 0.7765, 0.6275, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.8)
+theme_override_constants/outline_size = 6
+
+[node name="BR" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchor_left = 1
+anchor_top = 1
+anchor_right = 1
+anchor_bottom = 1
+offset_left = -260
+offset_top = -96
+offset_right = -16
+offset_bottom = -14
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+alignment = 2
+theme_override_constants/separation = 2
+
+[node name="Speed" type="Label" parent="BR"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 40
+theme_override_colors/font_color = Color(1, 0.9529, 0.8941, 1)
+theme_override_colors/font_shadow_color = Color(0.2902, 0.07059, 0.2118, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+
+[node name="SpdL" type="Label" parent="BR"]
+layout_mode = 2
+text = "KNOTS · BOOST"
+horizontal_alignment = 2
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="GaugeRow" type="HBoxContainer" parent="BR"]
+layout_mode = 2
+alignment = 2
+
+[node name="Gauge" type="Control" parent="BR/GaugeRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 7)
+script = ExtResource("4")
+kind = 7
+
+[node name="Coach" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 16
+offset_top = 150
+offset_right = 346
+offset_bottom = 360
+mouse_filter = 2
+script = ExtResource("5")
+
+[node name="V" type="VBoxContainer" parent="Coach"]
+layout_mode = 2
+theme_override_constants/separation = 8
+mouse_filter = 2
+
+[node name="Top" type="HBoxContainer" parent="Coach/V"]
+layout_mode = 2
+
+[node name="Step" type="Label" parent="Coach/V/Top"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.5608, 0.9137, 1, 1)
+size_flags_horizontal = 3
+
+[node name="Skip" type="Button" parent="Coach/V/Top"]
+layout_mode = 2
+unique_name_in_owner = true
+theme_type_variation = &"GhostButton"
+text = "SKIP ›  [TAB]"
+theme_override_font_sizes/font_size = 11
+visible = false
+
+[node name="Dots" type="Control" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 3)
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="Keys" type="HFlowContainer" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+mouse_filter = 2
+
+[node name="Body" type="RichTextLabel" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+mouse_filter = 2
+theme_override_font_sizes/normal_font_size = 15
+theme_override_font_sizes/bold_font_size = 15
+
+[node name="Count" type="Label" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = ""
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.5608, 0.9137, 1, 1)
+
+[node name="Prog" type="Control" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 5)
+mouse_filter = 2
+
+[node name="Next" type="Button" parent="Coach/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "CONTINUE  [ENTER]"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 13
+visible = false
+
+[node name="RecBadge" type="Label" parent="."]
+layout_mode = 1
+unique_name_in_owner = true
+text = "●  REC   T = NOTE"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(1, 0.4784, 0.4784, 1)
+anchor_left = 0
+anchor_top = 1
+anchor_right = 0
+anchor_bottom = 1
+offset_left = 16
+offset_top = -64
+offset_right = 220
+offset_bottom = -46
+grow_vertical = 0
+visible = false
+
+[node name="RecNote" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.38
+anchor_right = 0.5
+anchor_bottom = 0.38
+offset_left = -260
+offset_top = -50
+offset_right = 260
+offset_bottom = 50
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="V" type="VBoxContainer" parent="RecNote"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NoteLbl" type="Label" parent="RecNote/V"]
+layout_mode = 2
+text = "PLAYTEST NOTE"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.5608, 0.9137, 1, 1)
+
+[node name="RecNoteIn" type="LineEdit" parent="RecNote/V"]
+layout_mode = 2
+unique_name_in_owner = true
+placeholder_text = "What felt off or great? Enter saves, Esc cancels"
+max_length = 500

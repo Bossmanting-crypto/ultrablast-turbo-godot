@@ -1,0 +1,168 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Shader" path="res://shaders/sky.gdshader" id="1"]
+[ext_resource type="Texture2D" path="res://assets/textures/sky.webp" id="2"]
+[ext_resource type="Shader" path="res://shaders/lens_post.gdshader" id="3"]
+[ext_resource type="Script" path="res://scripts/ui/main.gd" id="4"]
+[ext_resource type="Texture2D" path="res://assets/textures/doodles.webp" id="5"]
+[ext_resource type="Script" path="res://scripts/ui/overlay.gd" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/ui/title_screen.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_screen.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/ui/over_screen.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/ui/tutdone_screen.tscn" id="11"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.03922, 0.04314, 0.1333, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6627, 0.7608, 1, 1)
+ambient_light_energy = 0.75
+tonemap_mode = 3
+tonemap_exposure = 0.92
+glow_enabled = true
+glow_normalized = false
+glow_intensity = 0.72
+glow_strength = 1.0
+glow_bloom = 0.0
+glow_blend_mode = 0
+glow_hdr_threshold = 0.9
+glow_hdr_scale = 1.0
+glow_levels/1 = 0.4
+glow_levels/2 = 0.7
+glow_levels/3 = 0.8
+glow_levels/4 = 0.4
+glow_levels/5 = 0.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_2"]
+render_priority = -100
+shader = ExtResource("1")
+shader_parameter/map = ExtResource("2")
+shader_parameter/uBright = 0.95
+
+[sub_resource type="SphereMesh" id="SphereMesh_3"]
+radius = 1500.0
+height = 3000.0
+radial_segments = 64
+rings = 32
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4"]
+shader = ExtResource("3")
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_5"]
+blend_mode = 1
+
+[node name="Main" type="Node"]
+script = ExtResource("4")
+
+[node name="Env" type="WorldEnvironment" parent="."]
+unique_name_in_owner = true
+environment = SubResource("Environment_1")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+unique_name_in_owner = true
+light_color = Color(1, 0.8627, 0.6902, 1)
+light_energy = 1.6
+shadow_enabled = false
+
+[node name="Camera" type="Camera3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 22, -10)
+fov = 72.0
+near = 0.1
+far = 3200.0
+current = true
+
+[node name="Sky" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+mesh = SubResource("SphereMesh_3")
+material_override = SubResource("ShaderMaterial_2")
+cast_shadow = 0
+extra_cull_margin = 16384.0
+
+[node name="World" type="Node3D" parent="."]
+unique_name_in_owner = true
+
+[node name="PostLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="Lens" type="ColorRect" parent="PostLayer"]
+unique_name_in_owner = true
+material = SubResource("ShaderMaterial_4")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DoodleLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="Doodle" type="TextureRect" parent="DoodleLayer"]
+unique_name_in_owner = true
+material = SubResource("CanvasItemMaterial_5")
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 15
+anchor_left = -0.06
+anchor_top = -0.06
+anchor_right = 1.06
+anchor_bottom = 1.06
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("5")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="FxLayer" type="CanvasLayer" parent="."]
+layer = 3
+
+[node name="Overlay0" type="Control" parent="FxLayer"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("6")
+layer = 0
+
+[node name="Overlay1" type="Control" parent="FxLayer"]
+unique_name_in_owner = true
+material = SubResource("CanvasItemMaterial_5")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("6")
+layer = 1
+
+[node name="Overlay2" type="Control" parent="FxLayer"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+script = ExtResource("6")
+layer = 2
+
+[node name="HudLayer" type="CanvasLayer" parent="."]
+layer = 4
+
+[node name="Hud" parent="HudLayer" instance=ExtResource("7")]
+unique_name_in_owner = true
+
+[node name="ScreenLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Title" parent="ScreenLayer" instance=ExtResource("8")]
+unique_name_in_owner = true
+
+[node name="Pause" parent="ScreenLayer" instance=ExtResource("9")]
+unique_name_in_owner = true
+
+[node name="Over" parent="ScreenLayer" instance=ExtResource("10")]
+unique_name_in_owner = true
+
+[node name="Tutdone" parent="ScreenLayer" instance=ExtResource("11")]
+unique_name_in_owner = true

@@ -1,0 +1,274 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/over_screen.gd" id="1"]
+[ext_resource type="FontFile" path="res://assets/fonts/Bungee-Regular.woff2" id="2"]
+[ext_resource type="FontFile" path="res://assets/fonts/ChakraPetch-700.woff2" id="3"]
+[ext_resource type="FontFile" path="res://assets/fonts/ChakraPetch-600.woff2" id="4"]
+
+[node name="Over" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03922, 0.04314, 0.1333, 0.8)
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+
+[node name="Center" type="CenterContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Card" type="VBoxContainer" parent="Scroll/Center"]
+layout_mode = 2
+custom_minimum_size = Vector2(760, 0)
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="OverTitle" type="Label" parent="Scroll/Center/Card"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "WORLD COLLAPSE"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 54
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+theme_override_colors/font_shadow_color = Color(0.3529, 0.07059, 0.2118, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+
+[node name="Stats" type="GridContainer" parent="Scroll/Center/Card"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+
+[node name="SScoreBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SScoreBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SScore" type="Label" parent="Scroll/Center/Card/Stats/SScoreBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SScoreBox/V"]
+layout_mode = 2
+text = "SCORE"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="SBestBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SBestBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SBest" type="Label" parent="Scroll/Center/Card/Stats/SBestBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SBestBox/V"]
+layout_mode = 2
+text = "BEST"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="SChainBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SChainBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SChain" type="Label" parent="Scroll/Center/Card/Stats/SChainBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SChainBox/V"]
+layout_mode = 2
+text = "BEST SUPERCUT"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="SLevelBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SLevelBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SLevel" type="Label" parent="Scroll/Center/Card/Stats/SLevelBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SLevelBox/V"]
+layout_mode = 2
+text = "TOP RANK"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="SCrystalsBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SCrystalsBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SCrystals" type="Label" parent="Scroll/Center/Card/Stats/SCrystalsBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SCrystalsBox/V"]
+layout_mode = 2
+text = "CRYSTALS"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="SKillsBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SKillsBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SKills" type="Label" parent="Scroll/Center/Card/Stats/SKillsBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SKillsBox/V"]
+layout_mode = 2
+text = "TAKEDOWNS"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="SRiftsBox" type="PanelContainer" parent="Scroll/Center/Card/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(240, 0)
+
+[node name="V" type="VBoxContainer" parent="Scroll/Center/Card/Stats/SRiftsBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="SRifts" type="Label" parent="Scroll/Center/Card/Stats/SRiftsBox/V"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "0"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(1, 0.8235, 0.4784, 1)
+
+[node name="L" type="Label" parent="Scroll/Center/Card/Stats/SRiftsBox/V"]
+layout_mode = 2
+text = "RIFTS OPENED"
+horizontal_alignment = 1
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="RecRow" type="HBoxContainer" parent="Scroll/Center/Card"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="RecSaved" type="Label" parent="Scroll/Center/Card/RecRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "Playtest session saved."
+theme_override_fonts/font = ExtResource("4")
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+
+[node name="RecCopy" type="Button" parent="Scroll/Center/Card/RecRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "EXPORT PLAYTESTS"
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 11
+
+[node name="Btns" type="HBoxContainer" parent="Scroll/Center/Card"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 14
+
+[node name="AgainBtn" type="Button" parent="Scroll/Center/Card/Btns"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "FLY AGAIN"
+
+[node name="TitleBtn" type="Button" parent="Scroll/Center/Card/Btns"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "TITLE"
+theme_type_variation = &"GhostButton"

@@ -1,0 +1,133 @@
+[gd_resource type="AudioBusLayout" load_steps=11 format=3]
+
+[sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_j3pel"]
+threshold = -10.0
+ratio = 8.0
+attack_us = 2000.0
+release_ms = 200.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_g28q7"]
+cutoff_hz = 2400.0
+resonance = 0.6
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_n8wo2"]
+cutoff_hz = 18000.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_5t1r3"]
+cutoff_hz = 18000.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_cenje"]
+cutoff_hz = 18000.0
+
+[sub_resource type="AudioEffectReverb" id="AudioEffectReverb_dqt2m"]
+room_size = 0.7
+damping = 0.55
+spread = 0.9
+dry = 0.0
+wet = 1.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_7kkex"]
+cutoff_hz = 18000.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_k2ilm"]
+cutoff_hz = 18000.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_2g6t7"]
+cutoff_hz = 18000.0
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_y2dp7"]
+cutoff_hz = 18000.0
+
+[resource]
+bus/0/effect/0/effect = SubResource("AudioEffectCompressor_j3pel")
+bus/0/effect/0/enabled = true
+bus/1/name = &"Music"
+bus/1/solo = false
+bus/1/mute = false
+bus/1/bypass_fx = false
+bus/1/volume_db = -9.118639
+bus/1/send = &"Master"
+bus/1/effect/0/effect = SubResource("AudioEffectLowPassFilter_g28q7")
+bus/1/effect/0/enabled = true
+bus/2/name = &"SFX"
+bus/2/solo = false
+bus/2/mute = false
+bus/2/bypass_fx = false
+bus/2/volume_db = -0.9151498
+bus/2/send = &"Master"
+bus/3/name = &"UI"
+bus/3/solo = false
+bus/3/mute = false
+bus/3/bypass_fx = false
+bus/3/volume_db = -2.3267713
+bus/3/send = &"Master"
+bus/4/name = &"Engine"
+bus/4/solo = false
+bus/4/mute = false
+bus/4/bypass_fx = false
+bus/4/volume_db = 0.0
+bus/4/send = &"SFX"
+bus/5/name = &"Reverb"
+bus/5/solo = false
+bus/5/mute = false
+bus/5/bypass_fx = false
+bus/5/volume_db = -5.192746
+bus/5/send = &"Master"
+bus/5/effect/0/effect = SubResource("AudioEffectReverb_dqt2m")
+bus/5/effect/0/enabled = true
+bus/6/name = &"L_engine_bed"
+bus/6/solo = false
+bus/6/mute = false
+bus/6/bypass_fx = false
+bus/6/volume_db = 0.0
+bus/6/send = &"Engine"
+bus/6/effect/0/effect = SubResource("AudioEffectLowPassFilter_7kkex")
+bus/6/effect/0/enabled = true
+bus/7/name = &"L_engine_thrust"
+bus/7/solo = false
+bus/7/mute = false
+bus/7/bypass_fx = false
+bus/7/volume_db = 0.0
+bus/7/send = &"Engine"
+bus/7/effect/0/effect = SubResource("AudioEffectLowPassFilter_k2ilm")
+bus/7/effect/0/enabled = true
+bus/8/name = &"L_engine_whine"
+bus/8/solo = false
+bus/8/mute = false
+bus/8/bypass_fx = false
+bus/8/volume_db = 0.0
+bus/8/send = &"Engine"
+bus/8/effect/0/effect = SubResource("AudioEffectLowPassFilter_2g6t7")
+bus/8/effect/0/enabled = true
+bus/9/name = &"L_afterburner"
+bus/9/solo = false
+bus/9/mute = false
+bus/9/bypass_fx = false
+bus/9/volume_db = 0.0
+bus/9/send = &"Engine"
+bus/9/effect/0/effect = SubResource("AudioEffectLowPassFilter_y2dp7")
+bus/9/effect/0/enabled = true
+bus/10/name = &"L_charge_hum"
+bus/10/solo = false
+bus/10/mute = false
+bus/10/bypass_fx = false
+bus/10/volume_db = 0.0
+bus/10/send = &"SFX"
+bus/10/effect/0/effect = SubResource("AudioEffectLowPassFilter_n8wo2")
+bus/10/effect/0/enabled = true
+bus/11/name = &"L_tunnel_wind"
+bus/11/solo = false
+bus/11/mute = false
+bus/11/bypass_fx = false
+bus/11/volume_db = 0.0
+bus/11/send = &"SFX"
+bus/11/effect/0/effect = SubResource("AudioEffectLowPassFilter_5t1r3")
+bus/11/effect/0/enabled = true
+bus/12/name = &"L_iris_drone"
+bus/12/solo = false
+bus/12/mute = false
+bus/12/bypass_fx = false
+bus/12/volume_db = 0.0
+bus/12/send = &"SFX"
+bus/12/effect/0/effect = SubResource("AudioEffectLowPassFilter_cenje")
+bus/12/effect/0/enabled = true

@@ -1,0 +1,185 @@
+[gd_resource type="Theme" load_steps=14 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/ChakraPetch-600.woff2" id="1_ui"]
+[ext_resource type="FontFile" path="res://assets/fonts/Bungee-Regular.woff2" id="2_display"]
+[ext_resource type="FontFile" path="res://assets/fonts/ChakraPetch-700.woff2" id="3_bold"]
+
+[sub_resource type="StyleBoxFlat" id="btn_normal"]
+content_margin_left = 34.0
+content_margin_top = 12.0
+content_margin_right = 34.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 0.79, 0.5, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 6
+border_color = Color(0.64, 0.26, 0.17, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+shadow_color = Color(1, 0.7, 0.35, 0.45)
+shadow_size = 14
+
+[sub_resource type="StyleBoxFlat" id="btn_hover"]
+content_margin_left = 34.0
+content_margin_top = 12.0
+content_margin_right = 34.0
+content_margin_bottom = 12.0
+bg_color = Color(1, 0.88, 0.62, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 6
+border_color = Color(0.64, 0.26, 0.17, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+shadow_color = Color(1, 0.75, 0.4, 0.6)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="btn_focus"]
+draw_center = false
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.56, 0.91, 1, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+expand_margin_left = 4.0
+expand_margin_top = 4.0
+expand_margin_right = 4.0
+expand_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="ghost_normal"]
+content_margin_left = 22.0
+content_margin_top = 10.0
+content_margin_right = 22.0
+content_margin_bottom = 10.0
+bg_color = Color(0.04, 0.043, 0.133, 0.25)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.957, 0.776, 0.627, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+
+[sub_resource type="StyleBoxFlat" id="ghost_hover"]
+content_margin_left = 22.0
+content_margin_top = 10.0
+content_margin_right = 22.0
+content_margin_bottom = 10.0
+bg_color = Color(0.957, 0.776, 0.627, 0.16)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.86, 0.72, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+
+[sub_resource type="StyleBoxFlat" id="panel_card"]
+content_margin_left = 16.0
+content_margin_top = 14.0
+content_margin_right = 16.0
+content_margin_bottom = 14.0
+bg_color = Color(0.055, 0.051, 0.157, 0.86)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.957, 0.776, 0.627, 0.4)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="kbd"]
+content_margin_left = 7.0
+content_margin_top = 2.0
+content_margin_right = 7.0
+content_margin_bottom = 2.0
+bg_color = Color(0.957, 0.776, 0.627, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="line_edit"]
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0.35)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.824, 0.478, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxEmpty" id="empty"]
+
+[resource]
+default_font = ExtResource("1_ui")
+default_font_size = 15
+Button/colors/font_color = Color(0.04, 0.043, 0.133, 1)
+Button/colors/font_focus_color = Color(0.04, 0.043, 0.133, 1)
+Button/colors/font_hover_color = Color(0.04, 0.043, 0.133, 1)
+Button/colors/font_pressed_color = Color(0.04, 0.043, 0.133, 1)
+Button/font_sizes/font_size = 20
+Button/fonts/font = ExtResource("2_display")
+Button/styles/focus = SubResource("btn_focus")
+Button/styles/hover = SubResource("btn_hover")
+Button/styles/normal = SubResource("btn_normal")
+Button/styles/pressed = SubResource("btn_normal")
+CheckBox/colors/font_color = Color(0.957, 0.776, 0.627, 1)
+CheckBox/colors/font_focus_color = Color(1, 0.95, 0.89, 1)
+CheckBox/colors/font_hover_color = Color(1, 0.95, 0.89, 1)
+CheckBox/colors/font_pressed_color = Color(0.957, 0.776, 0.627, 1)
+CheckBox/font_sizes/font_size = 13
+CheckBox/fonts/font = ExtResource("3_bold")
+CheckBox/styles/focus = SubResource("btn_focus")
+CheckBox/styles/hover = SubResource("empty")
+CheckBox/styles/normal = SubResource("empty")
+CheckBox/styles/pressed = SubResource("empty")
+Display/base_type = &"Label"
+Display/fonts/font = ExtResource("2_display")
+GhostButton/base_type = &"Button"
+GhostButton/colors/font_color = Color(0.957, 0.776, 0.627, 1)
+GhostButton/colors/font_focus_color = Color(1, 0.95, 0.89, 1)
+GhostButton/colors/font_hover_color = Color(1, 0.95, 0.89, 1)
+GhostButton/colors/font_pressed_color = Color(0.957, 0.776, 0.627, 1)
+GhostButton/font_sizes/font_size = 15
+GhostButton/styles/hover = SubResource("ghost_hover")
+GhostButton/styles/normal = SubResource("ghost_normal")
+GhostButton/styles/pressed = SubResource("ghost_normal")
+Kbd/base_type = &"Label"
+Kbd/colors/font_color = Color(0.04, 0.043, 0.133, 1)
+Kbd/font_sizes/font_size = 12
+Kbd/fonts/font = ExtResource("3_bold")
+Kbd/styles/normal = SubResource("kbd")
+Label/colors/font_color = Color(1, 0.953, 0.894, 1)
+LineEdit/colors/font_color = Color(1, 0.953, 0.894, 1)
+LineEdit/styles/focus = SubResource("line_edit")
+LineEdit/styles/normal = SubResource("line_edit")
+Panel/styles/panel = SubResource("panel_card")
+PanelContainer/styles/panel = SubResource("panel_card")
+RichTextLabel/colors/default_color = Color(1, 0.953, 0.894, 1)
+RichTextLabel/fonts/bold_font = ExtResource("3_bold")
+RichTextLabel/fonts/normal_font = ExtResource("1_ui")
