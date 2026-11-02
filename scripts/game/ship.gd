@@ -218,7 +218,7 @@ func fly_update(dt: float) -> void:
 			var w := 1.0 - U.smooth(b.field * 0.9, reach, d)
 			var dirb := to / d
 			if d > b.field:
-				var gs: float = (0.3 if is_core else 0.85) * w * (0.35 if escaping else 1.0) * (1.0 - throttle * 0.45)
+				var gs: float = (0.3 if is_core else 0.7) * w * (0.35 if escaping else 1.0) * (1.0 - throttle * 0.45)
 				fwd = (fwd + (dirb - fwd * fwd.dot(dirb)) * gs * dt).normalized()
 			if not is_core:
 				down = (down + dirb * w * 2.2).normalized()   # near a mini-planet, 'down' leans toward it
