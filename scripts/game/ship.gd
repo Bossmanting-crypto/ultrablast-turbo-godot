@@ -144,9 +144,10 @@ func _make_bubble() -> void:
 		bubble.add_child(l); bubble_shapes.append(l)
 
 func reset_player() -> void:
-	pos = Vector3(0, World.CORE_R + 6, 0); fwd = Vector3(0, 0, 1); up = Vector3(0, 1, 0); speed = 24; boost = 0; hull = 100; heat = 0
+	pos = Vector3(0, World.CORE_R + 24, 0); fwd = Vector3(0, 0, 1); up = Vector3(0, 1, 0); speed = 24; boost = 0; hull = 100; heat = 0
 	mode = "fly"; hTarget = 6; stun = 0; invuln = 2; tunnel = null; weapon = null; magnetT = 0; slowT = 0; tunCool = 0; boostHold = 0; strobe = null; chargeArmed = false; flameTarget = 1
 	home = null; homeT = 0; homeCd = 0; spin = 0; throttle = 0.0; sinking = 0.0
+	vel = Vector3(0, 0, 24); yawV = 0; pitchV = 0; gspd = 0; eng = 24; fuel = 100; lit = true; ride = null; rideVr = 0; rideCd = 2.5; noGrav = 0; escFrom = null
 	for tr in trails: tr.clear()
 
 func ortho() -> void:
@@ -164,91 +165,205 @@ func hurt(amount: float, why: String = "") -> bool:
 	if hull <= 0: hull = 0; GAME.end("HULL BREACHED")
 	return true
 
+# =================== FLIGHT v5 (playtest: "good gravity on the mini-planets so I can ride them to refuel till
+# escape velocity; it flies itself when I leave the controls; pitch and yaw too restricted; when fuel runs out it falls")
+# Same model as the web build's src/20_ship.js:
+# - Velocity is a real vector that swings onto the nose with some grip, so hard turns drift a little.
+# - Gravity is real acceleration from the core (1/d^1.5, felt everywhere) and every mini-planet (1/d^2). With the
+#   engine lit you barely sag; with no fuel (or stalled) you fall and the nose weathervanes into the fall.
+# - Near a surface you ride it: hover height on a spring, yaw free, refuel fast. Pull up past escape speed (or fire
+#   a blast) to break away; below escape speed you only rise a little and gravity settles you back down.
+# - Free pitch and yaw with a little angular inertia. Nothing steers for you in open space.
+const FLIGHT := {
+	"yawMax": 2.7, "pitchMax": 2.5, "angK": 9.0, "grip": 5.5,
+	"gmCore": 3900.0, "gmOrb": 5200.0, "sagLit": 0.3,
+	"rideAlt": 3.0, "rideMax": 12.0, "vEscOrb": 36.0, "vEscCore": 42.0,
+	"fuelCruise": 0.9, "fuelThrust": 9.0, "fuelDash": 5.0, "refuelOrb": 28.0, "refuelCore": 14.0, "hardLanding": 18.0,
+}
+var SIM := false   # true while predict_path replays the flight model: no effects, no fuel
+var vel := Vector3(0, 0, 24)
+var grav := Vector3.ZERO
+var yawV := 0.0
+var pitchV := 0.0
+var gspd := 0.0
+var eng := 24.0
+var fuel := 100.0
+var lit := true
+var ride = null
+var rideH := 3.0
+var rideVr := 0.0
+var rideCd := 0.0
+var rideBlastT := 0.0
+var escFrom = null
+var escT := 0.0
+var fuelWarnT := 0.0
+var velSync := false
+
+## summed gravity acceleration at p; returns [acceleration, dominant body]
+func gravity_at(p: Vector3) -> Array:
+	var out := Vector3.ZERO
+	var best = null
+	var best_s := 0.0
+	for b in World.bodies():
+		var to: Vector3 = b.pos - p
+		var d := maxf(to.length(), b.r + 0.5)
+		var is_core: bool = b.kind == "core"
+		var a: float = FLIGHT.gmCore / (d * sqrt(d)) if is_core else FLIGHT.gmOrb / (d * d)
+		if not is_core and World.core.gravity: a *= 1.0 - U.smooth(b.field * 2.2, b.field * 3.4, d)   # wells end ~55 m out (everywhere once the core phases out)
+		if a <= 0: continue
+		out += to.normalized() * a
+		var score := a if is_core else a * 2.5   # near a mini-planet, it is the body you are flying around
+		if score > best_s: best_s = score; best = b
+	return [out, best]
+
+func v_esc_for(b) -> float:
+	return FLIGHT.vEscCore if b and b.kind == "core" else FLIGHT.vEscOrb
+
+func use_fuel(n: float) -> void:
+	if SIM or GAME.state != "play" or (TUT.active and fuel <= 35): return
+	fuel = maxf(0.0, fuel - n)
+
+## after anything else moved or re-aimed the ship (homing, tunnels, supercut, bounces, placement)
+func sync_vel() -> void:
+	vel = fwd * speed; eng = speed; gspd = 0.0; velSync = false
+
+func start_ride(b) -> void:
+	ride = b; rideVr = 0.0; rideH = clampf(pos.distance_to(b.pos) - b.r, 1.8, FLIGHT.rideMax)
+	if SIM: return
+	REC.ev("ride", b.kind); TUT.note("ride", b.kind); Coach.hint("ride")
+	FX.popup("RIDING · REFUELLING" if fuel < 99 else "RIDING", "#dce9a9"); AudioSys.play("match_boost", {"vol": 0.35, "rate": 0.8})
+
+func escape_ride(via_blast: bool) -> void:
+	var b = ride
+	if b == null: return
+	var n: Vector3 = (pos - b.pos).normalized()
+	vel += n * 16.0; fwd = (fwd + n * 0.55).normalized(); ortho()
+	ride = null; rideCd = 1.4; escFrom = b; escT = 6.0   # no re-capture by this body until you have left its well
+	if SIM: return
+	REC.ev("escape", [b.kind, snappedf(speed, 0.1), 1 if via_blast else 0]); TUT.note("escape", b.kind)
+	FX.event_text("ESCAPE VELOCITY!", "cyan"); FX.shockwave(pos, 10, Color(0.7, 1.6, 0.6), 0.5); FX.shake(0.25); CAM.punch += 5
+	AudioSys.play("tunnel_exit", {"vol": 0.6}); ST.gain("escape", 12); boost += 14; boostHold = maxf(boostHold, 0.4)
+
 func fly_update(dt: float) -> void:
+	if velSync: sync_vel()
 	var ctl := 0.0 if stun > 0 else 1.0
 	var sx := Ctl.steer_x * ctl
 	var sy := Ctl.steer_y * ctl
-	# dominant gravity body (Mario-Galaxy style orientation)
-	var best = null
-	var bw := 0.0
+	if rideCd > 0: rideCd -= dt
 	if noGrav > 0: noGrav -= dt
+	throttle = U.damp(throttle, 1.0 if BL.charging and fuel > 0 else 0.0, 7.0 if BL.charging else 1.6, dt)
+	# ---- fuel: cruise sips it, thrust burns it; empty = the engine cuts out ----
+	if mode == "fly" and ride == null: use_fuel((FLIGHT.fuelCruise + (FLIGHT.fuelThrust if BL.charging else 0.0)) * dt)
+	var is_lit: bool = fuel > 0 or TUT.active
+	if not SIM and is_lit != lit:
+		lit = is_lit
+		if not lit:
+			FX.event_text("FUEL EMPTY", "red"); FX.popup("ENGINE OUT · GLIDE ONTO A PLANET TO REFUEL", "#ff6a4a", true)
+			AudioSys.play("fizzle", {"vol": 0.7}); REC.ev("fuelOut"); Coach.hint("fuel")
+		elif ride != null: FX.popup("ENGINE RELIT", "#dce9a9")
+	if not SIM and is_lit and fuel < 25 and fuel > 0 and Ctl.now - fuelWarnT > 6:
+		fuelWarnT = Ctl.now; FX.popup("LOW FUEL · RIDE A PLANET TO REFUEL", "#ffd27a"); AudioSys.play("ui_warning", {"vol": 0.35, "bus": "ui"}); Coach.hint("fuel")
+	# ---- gravity ----
+	var dom = null
+	if noGrav > 0: grav = Vector3.ZERO
 	else:
-		for b in World.bodies():
-			var d: float = pos.distance_to(b.pos)
-			if d < b.field:
-				var w := 1.0 - U.smooth(b.field * 0.62, b.field, d)
-				if w > bw: bw = w; best = b
-	var escaping := boost > 26 and sy > -0.3
-	var gw := bw * (0.18 if escaping else 1.0)
-	fieldW = gw; inField = best if gw > 0.05 else null
-	throttle = U.damp(throttle, 1.0 if BL.charging else 0.0, 7.0 if BL.charging else 1.6, dt)
-	var yaw_rate := 1.95 if mode == "fly" and BL.charging else 2.1
-	fwd = fwd.rotated(up, -sx * yaw_rate * dt)
-	if best and gw > 0.05:
-		var n: Vector3 = (pos - best.pos).normalized()
-		up = up.lerp(n, 1.0 - exp(-4.5 * gw * dt)).normalized()
-		var alt: float = pos.distance_to(best.pos) - best.r
-		if not is_same(prevBody, best): hTarget = clampf(alt, 2.5, best.field - best.r - 3); prevBody = best
-		hTarget = clampf(hTarget + sy * 10 * dt, 2.4, best.field - best.r - 2.5)
-		pos += n * ((hTarget - alt) * 2.6 * gw * dt)
-		var tang := (fwd - n * fwd.dot(n)).normalized()
-		fwd = fwd.lerp(tang, 1.0 - exp(-7 * gw * dt)).normalized()
-		pitchVis = U.damp(pitchVis, sy * 0.35, 6, dt)
-		# free pitch blended in when weak field
-		if gw < 0.6:
-			var ax := fwd.cross(up).normalized()
-			fwd = fwd.rotated(ax, sy * 1.5 * dt * (1 - gw))
+		var gr := gravity_at(pos); grav = gr[0]; dom = gr[1]
+	gdown = grav.normalized() if grav.length_squared() > 1e-6 else -pos.normalized()
+	gpull = grav.length()
+	if escFrom != null:
+		escT -= dt
+		if escT <= 0 or pos.distance_to(escFrom.pos) > escFrom.field * 2.2: escFrom = null
+	# ---- ride: capture onto a surface ----
+	if ride == null and rideCd <= 0 and mode == "fly" and dom != null and noGrav <= 0 and not is_same(dom, escFrom):
+		var n0: Vector3 = pos - dom.pos
+		var d0 := n0.length(); n0 /= d0
+		var alt0: float = d0 - dom.r
+		var vr0 := vel.dot(n0)
+		if alt0 < FLIGHT.rideMax and vr0 < 6:
+			if vr0 < -FLIGHT.hardLanding and not SIM and not TUT.active:
+				hurt(roundf(clampf((-vr0 - FLIGHT.hardLanding) * 0.6 + 4, 4, 15)), "HARD LANDING"); FX.shake(0.4)
+			start_ride(dom)
+	# ---- turning: free pitch and yaw with a little inertia ----
+	var yaw_max: float = FLIGHT.yawMax * (0.9 if BL.charging else 1.0) * (1.0 if is_lit else 0.75)
+	var pitch_max: float = FLIGHT.pitchMax * (1.0 if is_lit else 0.75)
+	yawV = U.damp(yawV, sx * yaw_max, FLIGHT.angK, dt)
+	fwd = fwd.rotated(up, -yawV * dt)
+	bank = U.damp(bank, clampf(yawV / yaw_max, -1, 1) * 0.85, 7, dt)
+	if ride != null and ride.kind == "orb" and (not ride.alive or ride.fade < 0.5):
+		ride = null; rideCd = 0.8
+	if ride != null:
+		# ---- riding: hover on the surface, yaw free, the stick sets your height; escape needs the speed ----
+		var b = ride
+		var n: Vector3 = pos - b.pos
+		var d := n.length(); n /= d
+		var alt: float = d - b.r
+		var v_esc := v_esc_for(b)
+		var can_escape := speed >= v_esc
+		rideH = clampf(rideH + sy * 7 * dt, 1.8, FLIGHT.rideMax + (4.0 if can_escape else 1.5))
+		if sy < 0.1 and not can_escape: rideH = U.damp(rideH, FLIGHT.rideAlt, 0.8, dt)   # below escape speed gravity settles you back down
+		rideVr += ((rideH - alt) * 30.0 - rideVr * 8.0) * dt
+		pos += n * (rideVr * dt)
+		up = up.lerp(n, 1.0 - exp(-8 * dt)).normalized()
+		fwd = (fwd - n * fwd.dot(n)).normalized()
+		pitchV = U.damp(pitchV, 0.0, 8, dt); pitchVis = U.damp(pitchVis, sy * 0.35, 6, dt)
+		if not SIM:
+			fuel = minf(100.0, fuel + (FLIGHT.refuelCore if b.kind == "core" else FLIGHT.refuelOrb) * dt)
+			if randf() < dt * 30:
+				FX.spawn({"pos": b.pos + (U.rand_unit() + n * 2.2).normalized() * b.r, "vel": (pos - b.pos).normalized() * U.rand(8, 14),
+					"color": FX.LIME, "size": U.rand(0.2, 0.4), "life": 0.45, "shape": 5 if randf() < 0.3 else 0, "drag": 0.0})
+		if rideBlastT > 0: rideBlastT -= dt
+		if can_escape and rideBlastT > 0: escape_ride(true)                              # a blast off the surface launches you
+		elif can_escape and sy > 0.35 and alt > FLIGHT.rideMax - 0.5: escape_ride(false) # or pull up past the ride zone
+		elif alt > FLIGHT.rideMax + 5: ride = null; rideCd = 0.6                        # knocked off (dash, kick)
 	else:
-		prevBody = null
+		pitchV = U.damp(pitchV, sy * pitch_max, FLIGHT.angK, dt)
 		var ax := fwd.cross(up).normalized()
-		fwd = fwd.rotated(ax, sy * 1.6 * dt); up = up.rotated(ax, sy * 1.6 * dt)
+		fwd = fwd.rotated(ax, pitchV * dt); up = up.rotated(ax, pitchV * dt)
 		pitchVis = U.damp(pitchVis, 0.0, 6, dt)
-	# ---- gravity you can feel (playtest): every body pulls, the mini-planets most of all ----
-	# Outside a body's field its pull bends your heading toward it, so you can slingshot round the mini-planets;
-	# inside the field the orientation code above takes over. Holding the throttle or boosting resists the pull.
-	var down := -pos.normalized()            # in open space 'down' is the core
-	var pull_max := 0.0
-	if noGrav <= 0:
-		for b in World.bodies():
-			var to: Vector3 = b.pos - pos
-			var d := to.length()
-			var is_core: bool = b.kind == "core"
-			var reach: float = b.field * (2.0 if is_core else 3.2)
-			if d > reach or d < 0.01: continue
-			var w := 1.0 - U.smooth(b.field * 0.9, reach, d)
-			var dirb := to / d
-			if d > b.field:
-				var gs: float = (0.3 if is_core else 0.7) * w * (0.35 if escaping else 1.0) * (1.0 - throttle * 0.45)
-				fwd = (fwd + (dirb - fwd * fwd.dot(dirb)) * gs * dt).normalized()
-			if not is_core:
-				down = (down + dirb * w * 2.2).normalized()   # near a mini-planet, 'down' leans toward it
-				pull_max = maxf(pull_max, w)
-	gpull = pull_max; gdown = down
-	# slow = heavy: below cruise the jet sinks a little and the nose drops, until you open the throttle again
-	var slowness := 1.0 - U.smooth(base * 0.72, base * 1.0, speed)
-	sinking = U.damp(sinking, slowness if stun <= 0 else 0.0, 4, dt)
-	if sinking > 0.01:
-		if best and gw > 0.05:
-			hTarget = maxf(2.4, hTarget - 1.8 * sinking * dt)
-		else:
-			pos += down * (3.4 * sinking * dt)
-			var pax := fwd.cross(down)
-			if pax.length_squared() > 1e-6: fwd = fwd.rotated(pax.normalized(), 0.24 * sinking * dt)
+		# roll gently back toward level (away from whatever pulls you). Heading is untouched.
+		if absf(sy) < 0.2 and gpull > 0.3:
+			var want := -gdown
+			want -= fwd * want.dot(fwd)
+			if want.length_squared() > 1e-4: up = up.lerp(want.normalized(), 1.0 - exp(-0.7 * dt)).normalized()
+	# close to a mini-planet (or low over the core) its gravity bends your path toward it, so a pass curves into it
+	# and you can drop into a ride. In open space nothing bends the nose while the engine is lit.
+	if ride == null and is_lit and dom != null and mode == "fly":
+		var dd: float = pos.distance_to(dom.pos)
+		if dom.kind == "orb" or dd < 45:
+			var gp := grav - fwd * grav.dot(fwd)
+			fwd = (fwd + gp * ((1.1 if dom.kind == "orb" else 0.6) / maxf(speed, 10.0) * dt)).normalized()
 	ortho()
-	bank = U.damp(bank, sx * 0.75, 7, dt)
-	# boost: a kick, a short hold, then a smooth ease back to cruise
+	# ---- speed: engine, boost and the energy you trade with gravity ----
 	if boostHold > 0: boostHold -= dt
-	else: boost = maxf(0.0, boost * exp(-1.25 * dt) - 2.2 * dt) # Ace Combat: off the throttle you settle back to cruise in a couple of seconds
-	if boost > 85: boost = U.damp(boost, 85.0, 5, dt) # stacked kicks squash toward a ceiling instead of running away
+	else: boost = maxf(0.0, boost * exp(-1.25 * dt) - 2.2 * dt)   # Ace Combat: off the throttle you settle back to cruise
+	if boost > 85: boost = U.damp(boost, 85.0, 5, dt)
+	if not is_lit: boost = minf(boost, 6.0)
 	var slow := 0.55 if slowT > 0 else 1.0
-	# a bit of gravity (playtest): climbing away from the core (or a mini-planet you are near) bleeds speed,
-	# diving toward it gains some
-	var climb := fwd.dot(-gdown)
-	var grav := (0.35 if inField else 1.0) * -climb * 9.0
-	var target := (base + ST.rank * 2 + GAME.momentum * 0.5) * slow + boost + grav
-	speed = U.damp(speed, target, 6.0 if target > speed else 2.5, dt)
+	var along := 0.0 if ride != null else grav.dot(fwd)   # climbing costs speed, diving gains it
+	gspd = clampf(gspd * exp(-(0.45 if is_lit else 0.08) * dt) + along * (0.6 if is_lit else 1.0) * dt, -18, 40)
+	var engine := (base + ST.rank * 2 + GAME.momentum * 0.5) * slow + boost if is_lit else 0.0
+	eng = U.damp(eng, engine, 6.0 if engine > eng else (2.5 if is_lit else 0.25), dt)
+	speed = maxf(6.0 if is_lit else 4.0, eng + gspd)
 	if stun > 0: speed = U.damp(speed, 6.0, 3, dt)
-	pos += fwd * speed * dt
+	# ---- velocity: swings onto the nose (grip); gravity sags it, a lot more with the engine out ----
+	vel = vel.lerp(fwd * speed, 1.0 - exp(-(FLIGHT.grip if is_lit else FLIGHT.grip * 0.35) * dt))
+	if ride == null:
+		var stall := 1.0 - U.smooth(9, 16, speed)
+		var sag: float = maxf(FLIGHT.sagLit, stall) if is_lit else 1.0
+		vel += grav * (sag * dt)
+		if not is_lit or stall > 0.3:   # the nose weathervanes into the fall
+			var vd := vel.normalized()
+			var ax2 := fwd.cross(vd)
+			var s2 := ax2.length()
+			if s2 > 1e-4:
+				var k := minf(1.0, (stall if is_lit else 1.0) * 1.6 * dt)
+				var ang := asin(minf(1.0, s2)) * k
+				fwd = fwd.rotated(ax2 / s2, ang); up = up.rotated(ax2 / s2, ang); ortho()
+	else:
+		vel -= up * vel.dot(up)   # riding: the spring owns the radial motion
+	sinking = 0.0 if is_lit else 1.0
+	pos += vel * dt
+	inField = ride; fieldW = 1.0 if ride != null else 0.0
 	ram = boost > 22
 
 func tunnel_update(dt: float) -> void:
@@ -344,14 +459,14 @@ func collisions(dt: float) -> void:
 			if b.kind == "orb" and ram and hurtCd <= 0: # boosting into an orb chips its shield instead of hurting you
 				Enemies.damage_orb(b, 2, "RAM"); hurtCd = 0.5; FX.shake(0.3)
 				var n0: Vector3 = (pos - b.pos).normalized()
-				pos = b.pos + n0 * mn; fwd = fwd.bounce(n0).normalized(); ortho()
+				pos = b.pos + n0 * mn; fwd = fwd.bounce(n0).normalized(); ortho(); sync_vel()
 				continue
 			var n: Vector3 = (pos - b.pos).normalized()
 			pos = b.pos + n * mn
 			var dn := fwd.dot(n)
 			if dn < 0: fwd = (fwd - n * dn * 1.6).normalized()
 			if hurtCd <= 0: hurt(5, "IMPACT"); hurtCd = 0.5; boost *= 0.5
-			ortho()
+			ortho(); vel += n * maxf(0.0, -vel.dot(n))
 	# barrier
 	var L := pos.length()
 	var lim := World.R - 1.4
@@ -371,7 +486,7 @@ func collisions(dt: float) -> void:
 		pos = n * lim
 		var dn := fwd.dot(n)
 		if dn > 0: fwd = (fwd - n * dn * 1.8).normalized()
-		ortho()
+		ortho(); vel -= n * (maxf(0.0, vel.dot(n)) * 1.6)
 		if hurtCd <= 0:
 			World.barrier_impact(n * World.R, GAME.utime); hurtCd = 0.4; boost *= 0.7
 			FX.burst_shapes(pos, 20, [0, 5], 12, Color(0.6, 1.5, 2))
@@ -431,7 +546,7 @@ func update_ship_visual(rdt: float, _gdt: float) -> void:
 	var k := 1.0 - exp(-9 * rdt)
 	THR.c1 = THR.c1.lerp(T[0], k); THR.c2 = THR.c2.lerp(T[1], k)
 	# let go of the throttle: the flame shrinks and dims over about a second instead of snapping off
-	THR.vis = U.damp(THR.vis, T[2] + (minf(boost / 70, 1) * 0.7 if st == "boost" else 0.0) + throttle * 0.25, 2.2 if st == "idle" else 10.0, rdt)
+	THR.vis = U.damp(THR.vis, (T[2] + (minf(boost / 70, 1) * 0.7 if st == "boost" else 0.0) + throttle * 0.25) * (1.0 if lit else 0.04), 2.2 if st == "idle" or not lit else 10.0, rdt)  # engine out: the flame gutters away
 	THR.dia = U.damp(THR.dia, T[3], 8, rdt)
 	# tint the hot core too, so the colour reads through the glow
 	ship.set_flame_colors(THR.c1, THR.c2, Color(1, 1, 1).lerp(THR.c1, 0.6), THR.c1)
@@ -500,7 +615,7 @@ func _update_haze(amt: float, flame_len: float) -> void:
 func _update_shock_rings(rdt: float, thr_pow: float, flame_len: float, st: String) -> void:
 	var drive := clampf((thr_pow - 0.35) / 0.8, 0.0, 1.0)
 	if st == "turbo" or st == "gold": drive = maxf(drive, 0.9)
-	if mode == "puzzle" or not ship.visible or GAME.state != "play": drive = 0.0
+	if mode == "puzzle" or not ship.visible or GAME.state != "play" or not lit: drive = 0.0
 	ring_cd -= rdt
 	if drive > 0.05 and ring_cd <= 0.0:
 		ring_cd = lerpf(0.2, 0.06, drive)

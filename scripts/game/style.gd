@@ -98,10 +98,10 @@ func style_update(dt: float) -> void:
 
 # ---------- phase director ----------
 const PHASES := [
-	{"name": "IGNITION", "t": 0, "enemies": 1, "firstEnemy": 16, "orb": null, "core": null, "pickups": false, "pal": "cyan"},
-	{"name": "CONTACT", "t": 35, "enemies": 3, "orb": ["probes"], "core": null, "turrets": "orbs", "pickups": true, "pal": "gold"},
-	{"name": "THE IRIS", "t": 85, "enemies": 4, "orb": ["probes", "superblast"], "core": [14, 20], "turrets": "all", "pickups": true, "pal": "mag"},
-	{"name": "LAST LIGHT", "t": 135, "enemies": 5, "orb": ["probes", "superblast", "superblast"], "core": [9, 13], "turrets": "all", "pickups": true, "pal": "red"},
+	{"name": "IGNITION", "t": 0, "enemies": 2, "firstEnemy": 12, "orb": null, "core": null, "pickups": false, "pal": "cyan"},
+	{"name": "CONTACT", "t": 35, "enemies": 4, "orb": ["probes"], "core": null, "turrets": "orbs", "pickups": true, "pal": "gold"},
+	{"name": "THE IRIS", "t": 85, "enemies": 5, "orb": ["probes", "superblast"], "core": [14, 20], "turrets": "all", "pickups": true, "pal": "mag"},
+	{"name": "LAST LIGHT", "t": 135, "enemies": 7, "orb": ["probes", "superblast", "superblast"], "core": [9, 13], "turrets": "all", "pickups": true, "pal": "red"},
 ]
 const TUT_PHASE := {"name": "FLIGHT SCHOOL", "enemies": 0, "orb": null, "core": null, "pickups": false}
 var DIR := {"phase": 0}

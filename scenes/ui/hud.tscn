@@ -224,7 +224,7 @@ anchor_top = 1
 anchor_right = 0
 anchor_bottom = 1
 offset_left = 16
-offset_top = -40
+offset_top = -60
 offset_right = 300
 offset_bottom = -14
 grow_vertical = 0
@@ -251,6 +251,28 @@ script = ExtResource("4")
 kind = 0
 color = Color(0.8627, 0.9137, 0.6627, 1)
 color2 = Color(1, 0.8235, 0.4784, 1)
+
+[node name="FuelRow" type="HBoxContainer" parent="BL"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FuelLbl" type="Label" parent="BL/FuelRow"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "FUEL"
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7255, 0.6627, 0.7882, 1)
+custom_minimum_size = Vector2(44, 0)
+
+[node name="Fuel" type="Control" parent="BL/FuelRow"]
+layout_mode = 2
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 8)
+script = ExtResource("4")
+kind = 0
+color = Color(0.3098, 0.8235, 1, 1)
+color2 = Color(0.5608, 0.9137, 1, 1)
 
 [node name="Thruster" type="VBoxContainer" parent="."]
 unique_name_in_owner = true

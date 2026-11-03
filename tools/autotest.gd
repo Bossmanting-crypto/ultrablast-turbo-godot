@@ -62,6 +62,7 @@ func _process(_d: float) -> void:
 		"ab": _ab()
 		"thrusters": _thrusters()
 		"fxlab": _fxlab()
+		"physics": _physics()
 		"iso": _iso()
 	log_t += 1
 	if int(log_t) % 30 == 0: print("AUTOTEST ", status())
@@ -122,7 +123,8 @@ func _puzzle() -> void:
 
 func _supercut() -> void:
 	if f == 20: GAME.start_game()
-	if f == 40: ST.rank = 2; ST.cells = 2; ST.turboCd = 0; Ctl.test_hold = true
+	if f == 40: ST.rank = 2; ST.cells = 2; ST.turboCd = 0; ST.bar = 90.0; Ctl.test_hold = true
+	if f > 40 and f < 120: ST.idle = 0.0   # keep the style rank from idling down before the forge
 	if f == 70: shot("turbo_forge")
 	if f > 70 and P.mode == "puzzle" and f % 3 == 0 and BL.puzzle and BL.puzzle.inZone: Ctl.events.append({"t": "home"})
 	if f == 80: shot("turbo_align")
@@ -247,3 +249,63 @@ func _fxlab() -> void:
 	if f == 146: P.debug_state = "home"
 	if f == 158: shot("lab_home")
 	if f == 159: P.debug_state = ""; Ctl.test_hold = false
+
+## flight v5: hands-off flight, turn rates, planet capture + riding + escape, engine-out fall, jet pressure
+func _sim(sec: float) -> void:
+	for k in int(sec * 60):
+		P.fly_update(1.0 / 60.0); P.collisions(1.0 / 60.0)
+func _place(p: Vector3, f: Vector3, u: Vector3) -> void:
+	P.pos = p; P.fwd = f; P.up = u; P.ortho(); P.velSync = true; P.ride = null; P.rideCd = 0; P.boost = 0; P.escFrom = null
+func _physics() -> void:
+	if f == 20: GAME.start_game()
+	if f == 30:
+		P.invuln = 999
+		Ctl.test_steer = Vector2.ZERO
+		_place(Vector3(0, 70, 0), Vector3(1, 0, 0), Vector3.UP); var f0 := P.fwd; _sim(3)
+		notes.append("hands-off 3s: heading change %.1f deg, speed %.1f" % [rad_to_deg(acos(clampf(f0.dot(P.fwd), -1, 1))), P.speed])
+		_place(Vector3(0, 70, 0), Vector3(1, 0, 0), Vector3.UP); f0 = P.fwd; Ctl.test_steer = Vector2(1, 0); Ctl.poll(); _sim(1)
+		notes.append("yaw 1s: %d deg" % roundi(rad_to_deg(acos(clampf(f0.dot(P.fwd), -1, 1)))))
+		_place(Vector3(0, 70, 0), Vector3(1, 0, 0), Vector3.UP); f0 = P.fwd; Ctl.test_steer = Vector2(0, 1); Ctl.poll(); _sim(1)
+		notes.append("pitch 1s: %d deg" % roundi(rad_to_deg(acos(clampf(f0.dot(P.fwd), -1, 1)))))
+		Ctl.test_steer = Vector2.ZERO; Ctl.poll()
+		var o: Dictionary = World.orbs[0]
+		var n: Vector3 = Vector3.UP
+		var side: Vector3 = o.pos.cross(n).normalized()
+		_place(o.pos + n * (o.r + 12) - side * 25, side, n); P.fuel = 20
+		var gr: Array = P.gravity_at(P.pos)
+		notes.append("at pass start: |g|=%.1f dom=%s orb.r=%.1f field=%.1f orbit=%.1f fade=%s" % [gr[0].length(), gr[1].kind if gr[1] else "-", o.r, o.field, o.pos.length(), str(o.fade)])
+		var track := []
+		var fine := []
+		for k in 8:
+			_sim(0.2); var nn: Vector3 = (P.pos - o.pos).normalized()
+			fine.append("%.1f vr%.1f fdn%.2f sp%.1f %s" % [P.pos.distance_to(o.pos) - o.r, P.vel.dot(nn), P.fwd.dot(nn), P.speed, "R" if P.ride != null else ""])
+		notes.append("fine: " + " | ".join(fine))
+		for k in 6: _sim(1); track.append("%.1f%s/%d" % [P.pos.distance_to(o.pos) - o.r, "R" if P.ride != null else "", roundi(P.fuel)])
+		notes.append("pass at 12 m -> " + " ".join(track))
+		Ctl.test_steer = Vector2(0, 1); Ctl.poll(); _sim(1.5)
+		notes.append("pull up below escape speed: riding=%s alt=%.1f speed=%.1f" % [P.ride != null, P.pos.distance_to(o.pos) - o.r, P.speed])
+		Ctl.test_steer = Vector2.ZERO; Ctl.poll()
+		P.fuel = 0.01; _place(Vector3(0, 75, 0), Vector3(1, 0, 0), Vector3.UP); P.fuel = 0.01
+		track = []
+		for k in 8: _sim(1); track.append("%.0f/%.0f%s" % [P.pos.length(), P.speed, "R:" + P.ride.kind if P.ride != null else ""])
+		notes.append("engine out from r=75 -> " + " ".join(track))
+		P.fuel = 100
+	# escape needs real frames (charging runs in the game loop)
+	if f == 40:
+		var o: Dictionary = World.orbs[0]
+		var side: Vector3 = o.pos.cross(Vector3.UP).normalized()
+		_place(o.pos + Vector3.UP * (o.r + 4), side, Vector3.UP); P.fuel = 60; P.start_ride(o)
+		Ctl.test_hold = true; Ctl.test_steer = Vector2(0, 1); set_meta("t0", GAME.time)
+	if f > 40 and f < 200 and not has_meta("esc") and P.ride == null and f > 45:
+		set_meta("esc", GAME.time - get_meta("t0")); notes.append("thrust + pull up: escaped after %.1fs at %.0f kts" % [get_meta("esc"), P.speed * 9.5])
+		Ctl.test_hold = false; Ctl.test_steer = Vector2.ZERO
+	if f == 200:
+		Ctl.test_hold = false; Ctl.test_steer = Vector2.ZERO
+		if not has_meta("esc"): notes.append("thrust + pull up: NOT escaped (speed %.0f kts)" % (P.speed * 9.5))
+		GAME.time = 40.0; P.invuln = 0; P.hull = 5000; set_meta("h0", P.hull)
+	if f == 560:
+		var st := {}
+		for e in Enemies.enemies:
+			if e.alive: st[e.st] = st.get(e.st, 0) + 1
+		notes.append("12s of jets vs a hands-off player: hull lost %d, jets %s" % [roundi(get_meta("h0") - P.hull), str(st)])
+		shot("physics_jets")

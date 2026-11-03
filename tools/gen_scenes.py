@@ -150,10 +150,13 @@ def hud():
     widget(sc, 'Cells', 'TR/StyleBox/TurboRow', 1, 105, 11)
     label(sc, 'TurboState', 'TR/StyleBox', 'LOCKED · REACH RANK B', FONT_BOLD, 11, MUTED, align=2, uniq=True)
     # bottom left: hull
-    sc.node('BL', 'VBoxContainer', '.', unique_name_in_owner='true', **anchored(0, 1, 0, 1, 16, -40, 300, -14, gv=0), mouse_filter=2, alignment=2)
+    sc.node('BL', 'VBoxContainer', '.', unique_name_in_owner='true', **anchored(0, 1, 0, 1, 16, -60, 300, -14, gv=0), mouse_filter=2, alignment=2)
     sc.node('HullRow', 'HBoxContainer', 'BL', layout_mode=2, theme_override_constants__separation=8)
     label(sc, 'HullLbl', 'BL/HullRow', 'HULL', FONT_BOLD, 11, MUTED, custom_minimum_size='Vector2(44, 0)')
     widget(sc, 'Hull', 'BL/HullRow', 0, 220, 8, LIME, GOLD)
+    sc.node('FuelRow', 'HBoxContainer', 'BL', layout_mode=2, theme_override_constants__separation=8)
+    label(sc, 'FuelLbl', 'BL/FuelRow', 'FUEL', FONT_BOLD, 11, MUTED, uniq=True, custom_minimum_size='Vector2(44, 0)')
+    widget(sc, 'Fuel', 'BL/FuelRow', 0, 220, 8, '#4fd2ff', '#8fe9ff')
     # bottom centre: thruster widget + prompt
     sc.node('Thruster', 'VBoxContainer', '.', unique_name_in_owner='true', **anchored(0.5, 1, 0.5, 1, -300, -100, 300, -14, gh=2, gv=0), mouse_filter=2, alignment=2, theme_override_constants__separation=6)
     sc.node('ThrRow', 'HBoxContainer', 'Thruster', layout_mode=2, alignment=1, theme_override_constants__separation=16)

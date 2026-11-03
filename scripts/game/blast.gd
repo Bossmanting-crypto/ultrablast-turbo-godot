@@ -150,6 +150,7 @@ func release_charge() -> void:
 		payload = null; Threats.fire_payload(pl); firedPayload = true
 	var n := rings
 	charging = false
+	if P.ride != null and n > 0: P.rideBlastT = 1.0   # a blast off a planet's surface launches you if you have the speed
 	if n == 0:
 		for r in ringMeshes: FX.free_turbo_ring(r)
 		ringMeshes = []; return
@@ -298,7 +299,7 @@ func puzzle_fail(reason: String) -> void:
 	elif p.ctx == "cache":
 		var c = P.cache
 		P.cache = null; P.prime = null; cancel_charge(true)
-		if c: P.fwd = (P.pos - World.core_group.global_transform * c.pos).normalized(); P.ortho() # home into it again to retry
+		if c: P.fwd = (P.pos - World.core_group.global_transform * c.pos).normalized(); P.ortho(); P.velSync = true # home into it again to retry
 		FX.event_text("LOCKED OUT", "violet", false); FX.popup(reason, "#c9a8ff", true); AudioSys.fail(); P.invuln = maxf(P.invuln, 1.0)
 		TUT.note("puzzleFail", "cache")
 
@@ -407,14 +408,14 @@ func breach_success() -> void:
 	Enemies.shatter_orb(o, "BREACH")
 	ST.cells = minf(3, ST.cells + 1); FX.popup("+1 TURBO CELL", "#ffd27a")
 	ST.gain("breach", 45); P.boost += 30; P.boostHold = 0.6
-	P.fwd = P.fwd.bounce((P.pos - o.pos).normalized()).normalized(); P.ortho()
+	P.fwd = P.fwd.bounce((P.pos - o.pos).normalized()).normalized(); P.ortho(); P.velSync = true
 	TUT.note("breach", true)
 
 func breach_fail(reason: String) -> void:
 	var o = breachOrb
 	breachOrb = null; P.mode = "fly"
 	P.prime = null; cancel_charge(true)
-	if o: P.fwd = (P.pos - o.pos).normalized(); P.ortho() # still exposed while its timer runs: home in again
+	if o: P.fwd = (P.pos - o.pos).normalized(); P.ortho(); P.velSync = true # still exposed while its timer runs: home in again
 	FX.event_text("LOCKED OUT", "violet", false); FX.popup(reason, "#c9a8ff", true); AudioSys.fail()
 	ST.style_lose(30); P.invuln = maxf(P.invuln, 1.2)
 	TUT.note("breach", false)
@@ -798,6 +799,7 @@ func collect_crystal(c: Dictionary) -> void:
 	if not c.alive: return
 	c.alive = false; c["respawnT"] = 4.0
 	GAME.crystals += 1; GAME.add_score(10, null); ST.gain("crystal", 2.2); TUT.note("crystal"); HOM.refill(0.25, "crystal")
+	P.fuel = minf(100.0, P.fuel + 3.0)  # a sip of fuel per crystal: enough to relight and limp to a planet
 	AudioSys.crystal(GAME.crystals); FX.sparks(c.pos, 8, c.color * 1.8, 10)
 
 func collect_homer(c: Dictionary, via_homing := false) -> void:

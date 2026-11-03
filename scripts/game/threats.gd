@@ -317,7 +317,7 @@ func draw_threats(c: CanvasItem) -> void:
 		var sp: Dictionary = FX.project(e.pos)
 		var on: bool = not sp.behind and sp.x > 20 and sp.y > 20 and sp.x < W - 20 and sp.y < H - 20
 		if not on: continue
-		var aiming: bool = e.cd < 0.6 and (P.pos - e.pos).normalized().dot(e.fwd) > 0.8
+		var aiming: bool = e.st == "aim" and (e.tele > 0 or e.shots > 0)
 		if aiming:
 			var s := clampf(600 / d, 12, 28)
 			for i in 4:

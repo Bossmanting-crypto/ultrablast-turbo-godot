@@ -318,6 +318,9 @@ func play_update(dt: float, rdt: float, evs: Array) -> void:
 		"puzzle": P.fly_update(dt); BL.puzzle_update(rdt, held, evs)
 		"loadup": P.fly_update(dt); BL.loadup_update(rdt, held)
 		"supercut": BL.supercut_update(dt, rdt, evs)
+	if P.mode != "fly" and P.mode != "puzzle" and P.mode != "loadup":
+		P.velSync = true
+		if P.ride != null: P.ride = null; P.rideCd = 1.0
 	BL.position_charge_rings(rdt)
 	P.collisions(dt)
 	world_update(dt, rdt)

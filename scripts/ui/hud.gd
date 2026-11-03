@@ -19,6 +19,8 @@ extends Control
 @onready var cells_w: HudWidget = %Cells
 @onready var turbo_state: Label = %TurboState
 @onready var hull_w: HudWidget = %Hull
+@onready var fuel_w: HudWidget = %Fuel
+@onready var fuel_lbl: Label = %FuelLbl
 @onready var thruster: Control = %Thruster
 @onready var home_chip: HudWidget = %HomeChip
 @onready var pips_w: HudWidget = %Pips
@@ -109,6 +111,10 @@ func update_hud() -> void:
 		else: it = "SEALED"
 	_txt(iris_txt, "iris", it)
 	hull_w.value = P.hull / 100.0
+	# flight v5: fuel gauge (lime while riding, blinking coral when low)
+	fuel_w.value = clampf(P.fuel / 100.0, 0, 1)
+	fuel_w.color = Color.html("#dce9a9") if P.ride != null else Color.html("#4fd2ff")
+	fuel_lbl.add_theme_color_override("font_color", Color.html("#dce9a9") if P.ride != null else (Color.html("#ff5b3d") if P.fuel < 25 and int(Ctl.now * 4) % 2 == 0 else Color.html("#b9a9c9")))
 	# style rank
 	var R: Dictionary = ST.RANKS[ST.rank]
 	if cache.get("rank") != ST.rank:
@@ -171,7 +177,13 @@ func update_hud() -> void:
 		elif ready: pr = "TURBO READY · HOLD %s PAST 3 RINGS" % bk
 		elif ST.unlocked("boost"): pr = "HOLD %s TO CHARGE · %s TO HOME" % [bk, hk]
 		elif ST.unlocked("homing"): pr = "%s TO HOME IN ON A LOCK" % hk
-	elif P.mode == "tunnel": pr = "RIFT TUNNEL · STEER TO GRAB GEMS"
+	if P.mode == "fly" and P.stun <= 0 and BL.payload == null:
+		if P.ride != null:
+			var ve: float = P.v_esc_for(P.ride)
+			if P.speed >= ve: pr = "ESCAPE SPEED · PULL UP OR BLAST · FUEL %d%%" % roundi(P.fuel)
+			else: pr = "RIDING · FUEL %d%% · ESCAPE %d/%d · HOLD %s" % [roundi(P.fuel), roundi(P.speed * 9.5), roundi(ve * 9.5), bk]
+		elif not P.lit: pr = "ENGINE OUT · GLIDE ONTO A PLANET"
+	if P.mode == "tunnel": pr = "RIFT TUNNEL · STEER TO GRAB GEMS"
 	elif P.mode == "homing": pr = "WAIT FOR THE RING…"
 	_txt(prompt, "prompt", pr)
 	var hide: bool = P.mode in ["puzzle", "loadup", "supercut"]

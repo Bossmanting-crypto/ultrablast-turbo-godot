@@ -61,7 +61,8 @@ func setup(r: Node3D) -> void:
 
 ## where the ship would really go with no input (gravity skim included), sampled every `spacing` units
 func predict_path(count: int, spacing: float, lead: float) -> Array:
-	var keys := ["speed", "boost", "boostHold", "hTarget", "prevBody", "pitchVis", "bank", "stun", "inField", "fieldW", "ram", "noGrav", "slowT"]
+	var keys := ["speed", "boost", "boostHold", "hTarget", "prevBody", "pitchVis", "bank", "stun", "inField", "fieldW", "ram", "noGrav", "slowT",
+		"vel", "grav", "gdown", "yawV", "pitchV", "gspd", "eng", "fuel", "lit", "ride", "rideH", "rideVr", "rideCd", "rideBlastT", "throttle", "sinking", "gpull", "velSync", "escFrom", "escT", "fuelWarnT"]
 	var save := {}
 	for k in keys: save[k] = P.get(k)
 	var sp: Vector3 = P.pos
@@ -72,6 +73,7 @@ func predict_path(count: int, spacing: float, lead: float) -> Array:
 	var sy := Ctl.steer_y
 	var ch: bool = BL.charging
 	Ctl.steer_x = 0; Ctl.steer_y = 0; BL.charging = false
+	P.SIM = true
 	var out := []
 	var trav := -lead
 	var nxt := 0.0
@@ -84,6 +86,7 @@ func predict_path(count: int, spacing: float, lead: float) -> Array:
 		if trav >= nxt:
 			out.append({"pos": P.pos, "fwd": P.fwd, "up": P.up, "right": P.right}); nxt += spacing
 	for k in keys: P.set(k, save[k])
+	P.SIM = false
 	P.pos = sp; P.fwd = sf; P.up = su; P.right = sr; Ctl.steer_x = sx; Ctl.steer_y = sy; BL.charging = ch
 	return out
 
@@ -317,6 +320,7 @@ func press() -> void:
 		FX.burst_shapes(P.pos + P.fwd * 2, 8, [5], 10, FX.CYAN)
 
 func start_homing(t: Dictionary, judge = null) -> void:
+	P.use_fuel(P.FLIGHT.fuelDash)
 	P.mode = "homing"; P.home = t; P.homeT = 0; P.homeFrom = P.pos; P.homeJudge = judge; mash = false; win = null
 	var d := target_pos(t).distance_to(P.pos)
 	P.homeDur = clampf(d / (125.0 if judge == "perfect" else 105.0), 0.12, 0.5); P.invuln = maxf(P.invuln, P.homeDur + 0.3)
@@ -378,7 +382,7 @@ func homing_impact(t, alive: bool) -> void:
 				bounce = 2.2
 				var n: Vector3 = (P.pos - t.pos).normalized(); P.fwd = P.fwd.bounce(n).normalized(); P.ortho()
 			"cache":
-				BL.prime_target(t, "cache"); P.fwd = ((P.pos - t.pos).normalized() + P.up * 0.4).normalized(); P.ortho()
+				BL.prime_target(t, "cache"); P.fwd = ((P.pos - t.pos).normalized() + P.up * 0.4).normalized(); P.ortho(); P.velSync = true
 			"pickup": t.pos = P.pos # pickups collect themselves on contact
 	else: # nothing left to hit: not the player's fault, so the charge comes back
 		AudioSys.whiff(); REC.ev("whiff", t.kind if t else null); refill(1, "whiff")

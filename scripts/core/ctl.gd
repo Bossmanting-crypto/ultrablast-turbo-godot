@@ -13,6 +13,14 @@ var charge_held := false
 var mx := 0.0                   # mouse in -1..1 (x right, y down) like the web build
 var my := 0.0
 var mouse_t := -99.0
+## Mouse flight (v5, playtest: "it flies itself when I leave the controls"): the mouse is a virtual stick you push by
+## moving it; it springs back to centre a moment after you stop, so a resting hand means straight flight. It used to
+## be the cursor's offset from the screen centre, which kept turning wherever you left it. Clicking the game
+## captures the pointer; menus and puzzles release it.
+const MOUSE_PX := 160.0
+var mvx := 0.0
+var mvy := 0.0
+var poll_t := 0.0
 var kb_t := -99.0
 var dev := "kb"                 # "kb" or "pad": prompts and labels follow it
 var pad_hold := false           # the A that pressed LAUNCH is not a boost
@@ -60,10 +68,14 @@ func _unhandled_input(e: InputEvent) -> void:
 		var vp := get_viewport().get_visible_rect().size
 		mx = e.position.x / vp.x * 2.0 - 1.0
 		my = e.position.y / vp.y * 2.0 - 1.0
-		mouse_t = now
+		if GAME.state == "play" and absf(e.relative.x) + absf(e.relative.y) > 0.5:
+			mvx = clampf(mvx + e.relative.x / MOUSE_PX, -1, 1); mvy = clampf(mvy + e.relative.y / MOUSE_PX, -1, 1)
+			mouse_t = now
 		if absf(e.relative.x) + absf(e.relative.y) > 3.0: _set_dev("kb")
 		return
-	elif e is InputEventMouseButton and e.pressed: mouse_t = now
+	elif e is InputEventMouseButton and e.pressed:
+		mouse_t = now
+		if GAME.state == "play" and P.mode != "puzzle" and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED: Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	elif (e is InputEventJoypadButton and e.pressed) or (e is InputEventJoypadMotion and absf(e.axis_value) > 0.5):
 		joy_id = e.device
 		_set_dev("pad")
@@ -107,15 +119,19 @@ func poll() -> void:
 	var ay := -y
 	if pad_x != 0.0 or pad_y != 0.0:
 		x = pad_x; y = -pad_y; ax = pad_x; ay = pad_y
-	elif x == 0.0 and y == 0.0 and now - mouse_t < 3.0 and mouse_t > kb_t:
+	elif x == 0.0 and y == 0.0 and mouse_t > kb_t:
 		var shape := func(v: float) -> float:
 			var a := absf(v)
-			if a < 0.05: return 0.0
-			return signf(v) * minf(1.0, (a - 0.05) / 0.42)
-		var vp := get_viewport().get_visible_rect().size
-		var asp := vp.x / vp.y
-		x = shape.call(mx * minf(1.2, asp * 0.75)); y = -shape.call(my)
-		ax = mx; ay = my
+			if a < 0.04: return 0.0
+			return signf(v) * minf(1.0, (a - 0.04) / 0.96)
+		x = shape.call(mvx); y = -shape.call(mvy)
+		ax = mvx; ay = mvy
+	# the virtual stick springs back to centre once the mouse rests
+	var pdt := clampf(now - poll_t, 0.0, 0.1); poll_t = now
+	if now - mouse_t > 0.12:
+		var kk := exp(-7.0 * pdt); mvx *= kk; mvy *= kk
+	if (GAME.state != "play" or P.mode == "puzzle") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE; mvx = 0.0; mvy = 0.0
 	if invert_y: y = -y
 	if test_steer != null: x = test_steer.x; y = test_steer.y
 	steer_x = x; steer_y = y; aim_x = ax; aim_y = ay

@@ -4,7 +4,7 @@ extends Node
 ## PLAYTESTS writes one combined file to your Downloads folder, in the same format as the web build, so the
 ## playtest analysis works unchanged. Notes while playing: T = type a note (the game freezes while you type).
 
-const BUILD := "godot-1 (pc-v4.2)" # bump on every shipped build: printed on the title screen and in every export
+const BUILD := "godot-2 (pc-v5)" # bump on every shipped build: printed on the title screen and in every export
 const DIR := "user://playtests"
 
 var on := true

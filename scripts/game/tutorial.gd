@@ -31,6 +31,7 @@ const STEPS := [
 	{"id": "takedown", "ch": "COMBAT", "title": "TAKEDOWNS", "newMove": "TAKEDOWNS!"},
 	{"id": "boost", "ch": "BOOST", "title": "BOOST", "newMove": "BOOST!", "hl": ["thruster"]},
 	{"id": "boom", "ch": "BOOST", "title": "BUNDLE BOOM", "hl": ["boomChip"]},
+	{"id": "planet", "ch": "BOOST", "title": "RIDE A PLANET", "newMove": "GRAVITY!", "hl": ["fuelRow"]},
 	{"id": "cache", "ch": "PUZZLES", "title": "CRYSTAL CACHE", "newMove": "MINIBLAST!"},
 	{"id": "breach", "ch": "PUZZLES", "title": "ORB BREACH"},
 	{"id": "rank", "ch": "TURBO", "title": "STYLE RANK", "newMove": "TURBO!", "hl": ["styleBox"]},
@@ -69,7 +70,7 @@ func teleport(pos: Vector3, fwd: Vector3) -> void:
 	P.pos = pos; P.fwd = fwd.normalized()
 	P.up = pos.normalized(); P.up = P.up - P.fwd * P.up.dot(P.fwd)
 	if P.up.length_squared() < 1e-4: P.up = Vector3(0, 1, 0) - P.fwd * P.fwd.y
-	P.up = P.up.normalized(); P.ortho(); P.noGrav = 3.5; P.boost = 0; P.speed = 26
+	P.up = P.up.normalized(); P.ortho(); P.noGrav = 3.5; P.boost = 0; P.speed = 26; P.velSync = true; P.ride = null; P.rideCd = 3.5
 	for r in FX.ribbons: r.pts.clear()
 	snap_cam(); FX.doodle_flash(0.25); AudioSys.whoosh(true, 0.25)
 
@@ -175,6 +176,7 @@ func keys_for(id: String) -> Array:
 		"ride", "supercut": return [HK(), "or", KC("SPACE", "A")]
 		"boost": return BOOSTK()
 		"boom": return [HOLDK(), "+", HK()]
+		"planet": return [KC("FLY LOW"), "then", HOLDK(), "+", KC("W", "STICK UP")]
 		"cache": return HOMEK() + ["then", HOLDK(), "+", HK()]
 		"breach": return HOMEK() + ["then", HOLDK(), "+", KC("W A S D", "D-PAD")]
 		"rank": return [KC("MIX MOVES")]
@@ -186,7 +188,7 @@ func keys_for(id: String) -> Array:
 
 func line_for(id: String) -> String:
 	match id:
-		"fly": return "Steer the ship. Near the planet, up and down change your height."
+		"fly": return "Steer the ship. Pitch and yaw are free (loops are fine). Let go and it flies straight."
 		"crystals": return "Fly through crystals. Every pickup builds your style rank."
 		"homing": return "A gold ring means locked. Press to dash in. Each dash uses one of 3 charges (pips under your aim)."
 		"chain": return "After a hit a ring closes on the next lock. Press when it turns gold. Too early breaks the chain."
@@ -197,6 +199,7 @@ func line_for(id: String) -> String:
 		"takedown": return "Drones lock on just like gems. Home into them."
 		"boost": return "Hold to thrust and charge up to 3 rings. Let go to blast, then fly through them."
 		"boom": return "While charging, press homing to detonate the rings around you."
+		"planet": return "Mini-planets pull you in. Fly low over one to ride it and refuel. Cruising sips fuel, thrust burns it, and an empty tank means the engine dies and you fall. To leave, hold boost past escape speed and pull up."
 		"cache": return "Home in to prime the cache. Hold boost: tap as the orb meets each gold zone, then let go to fire."
 		"breach": return "An exposed orb works the same way: prime it, hold boost, repeat the glyphs, let go to fire."
 		"rank": return "Mix your moves to climb to rank B. Repeats earn less."
@@ -209,6 +212,23 @@ func line_for(id: String) -> String:
 
 # ---------- steps ----------
 func _fly_setup(dd): dd.s = 0.0
+# ride a planet: line up a low pass over mini-planet 0 (tangent, 13 m up) so its gravity pulls you into a ride
+func planet_approach() -> void:
+	var o: Dictionary = World.orbs[0]
+	var n: Vector3 = o.pos.normalized()
+	var side := n.cross(Vector3.UP)
+	if side.length_squared() < 1e-4: side = Vector3.RIGHT
+	side = side.normalized()
+	teleport(o.pos + n * (o.r + 13) - side * 30, side)
+	P.noGrav = 0; P.rideCd = 0; P.fuel = 45
+func _planet_setup(dd): dd.rode = false; dd.esc = false; planet_approach()
+func _planet_on(ev, _v, dd):
+	if ev == "ride": dd.rode = true
+	if ev == "escape" and dd.rode: dd.esc = true
+func _planet_update(dd, _dt): if P.ride == null and not dd.esc and P.pos.distance_to(World.orbs[0].pos) > 75: planet_approach()
+func _planet_prog(dd): return (0.5 if dd.rode else 0.0) + (0.5 if dd.esc else 0.0)
+func _planet_goal(dd): return "FLY LOW OVER THE PLANET" if not dd.rode else ("ESCAPE: BOOST + PULL UP" if not dd.esc else "ESCAPE VELOCITY!")
+func _planet_done(dd): return dd.esc
 func _fly_update(dd, dt): if absf(Ctl.steer_x) + absf(Ctl.steer_y) > 0.25: dd.s += dt
 func _fly_prog(dd): return dd.s / 3.0
 func _fly_goal(_dd): return "STEER AROUND"

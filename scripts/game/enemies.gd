@@ -34,11 +34,12 @@ func setup(r: Node3D) -> void:
 		proj_mm.multimesh.set_instance_transform(i, World.HIDDEN); proj_sheath.multimesh.set_instance_transform(i, World.HIDDEN)
 		projs.append({"i": i, "on": false, "pos": Vector3.ZERO, "vel": Vector3.ZERO, "life": 0.0, "homing": 0.0, "col": COL_JET, "src": "jet", "minD": 99.0, "nm": false})
 	# enemy jets
-	for i in 5:
+	for i in 7:
 		var j := Jet.make(Color.html("#5fb81a"), Color(1.2, 2.4, 0.6), Color(0.6, 1.0, 0.3), Color(0.2, 0.9, 0.3), 0.85)
 		root.add_child(j); j.visible = false
-		enemies.append({"kind": "enemy", "j": j, "pos": Vector3.ZERO, "fwd": Vector3(1, 0, 0), "up": Vector3(0, 1, 0), "alive": false, "respawn": U.rand(1, 4), "cd": U.rand(1, 3),
-			"wp": Vector3.ZERO, "wpT": 0.0, "speed": 23.0, "hp": 1, "spawnT": 0.0})
+		enemies.append({"kind": "enemy", "i": i, "j": j, "pos": Vector3.ZERO, "fwd": Vector3(1, 0, 0), "up": Vector3(0, 1, 0), "alive": false, "respawn": U.rand(1, 4), "cd": U.rand(1, 3),
+			"wp": Vector3.ZERO, "wpT": 0.0, "speed": 23.0, "hp": 1, "hpMax": 1, "spawnT": 0.0,
+			"st": "patrol", "stT": 0.0, "tele": 0.0, "shots": 0, "shotT": 0.0, "roll": 0.0, "flash": 0.0, "slot": i})
 	# probes
 	var probe_geo := Meshes.octahedron(0.8)
 	var probe_mat := StandardMaterial3D.new(); probe_mat.albedo_color = Color.html("#2a0a20"); probe_mat.metallic = 0.8; probe_mat.roughness = 0.25
@@ -73,8 +74,13 @@ func update_projs(dt: float) -> void:
 		if p.homing:
 			var want: Vector3 = (P.pos - p.pos).normalized() * p.vel.length()
 			p.vel = p.vel.lerp(want, 1.0 - exp(-p.homing * dt))
+		var pv: Vector3 = p.pos
 		p.pos += p.vel * dt
-		var d: float = p.pos.distance_to(P.pos)
+		# swept test: fast bolts move metres per frame, so measure the closest approach along this frame's path
+		var seg: Vector3 = p.pos - pv
+		var sl := seg.length_squared()
+		var tt := clampf((P.pos - pv).dot(seg) / sl, 0.0, 1.0) if sl > 1e-6 else 1.0
+		var d: float = (pv + seg * tt).distance_to(P.pos)
 		if d < p.minD: p.minD = d
 		var dead := false
 		if not p.nm and p.minD < 3.4 and p.minD > 1.3 and d > p.minD + 1.5 and P.mode == "fly":
@@ -98,59 +104,127 @@ func kill_projs_in_radius(pos: Vector3, r: float) -> void:
 			proj_mm.multimesh.set_instance_transform(p.i, World.HIDDEN); proj_sheath.multimesh.set_instance_transform(p.i, World.HIDDEN)
 
 # ---------- enemy jets ----------
+## Enemy jets v5 (playtest: "the enemy ships need to be more aggressive and challenging"), same AI as the web build:
+##   patrol -> attack (pursue a slot around you, faster than your cruise) -> aim (0.35 s red-tick telegraph, then a
+##   3-bolt burst with lead) -> extend (blow past, run out, turn back in); evade (jink) when your nose is on it.
+## From phase 3 jets carry 2 hp: the first hit cracks the shield.
+const JET := {"see": 100.0, "patrol": 24.0, "attack": 33.0, "extend": 38.0, "turn": 2.6, "burst": 3, "gap": 0.11, "bolt": 52.0, "cd": [1.4, 2.3], "tele": 0.45, "spread": 0.045, "maxAim": 2}
+const JET_SLOTS := [[0, 2, -12], [14, 3, -4], [-14, 3, -4], [0, 1, 34], [0, 12, -8], [10, -6, -10], [-10, -6, -10]]  # right, up, fwd from you
+
 func spawn_enemy(e: Dictionary) -> void:
 	e.pos = World.random_free_spot(World.CORE_R + 14, World.R * 0.8)
-	if e.pos.distance_to(P.pos) < 35: e.pos = -e.pos
-	e.fwd = U.rand_unit(); e.up = e.pos.normalized(); e.alive = true; e.j.visible = true; e.spawnT = 0.8; e.cd = U.rand(2, 4)
+	if e.pos.distance_to(P.pos) < 45: e.pos = -e.pos
+	e.fwd = U.rand_unit(); e.up = e.pos.normalized(); e.alive = true; e.j.visible = true; e.spawnT = 0.8; e.cd = U.rand(1.5, 3)
+	e.hpMax = 2 if ST.DIR.phase >= 2 and not TUT.active else 1; e.hp = e.hpMax
+	e.st = "patrol"; e.stT = 0.0; e.tele = 0.0; e.shots = 0; e.flash = 0.0
 	FX.shockwave(e.pos, 5, FX.LIME, 0.5); FX.burst_shapes(e.pos, 14, [2, 5], 10, FX.LIME)
 
 func _style_tag(by) -> String:
 	return "ram" if by == "RAM" else ("boomkill" if by == "BOOM" else ("sckill" if by == "SUPERCUT" else ("homekill" if by == "HOMING" else "kill")))
 
-func kill_enemy(e: Dictionary, by = null) -> void:
-	if not e.alive: return
-	e.alive = false; e.j.visible = false; e.respawn = U.rand(5, 8)
+func kill_enemy(e: Dictionary, by = null) -> bool:
+	if not e.alive: return false
+	# armoured jets: the first hit cracks the shield; booms, finishers and supercuts kill outright
+	if e.hp > 1 and not (by in ["BOOM", "FINISHER", "SUPERCUT", "CRASH"]):
+		e.hp -= 1; e.flash = 0.3; e.st = "evade"; e.stT = 1.2; e.tele = 0.0; e.shots = 0
+		e.fwd = e.fwd.rotated(e.up, U.rand(-1, 1)).normalized()
+		FX.sparks(e.pos, 22, FX.LIME, 22); FX.shockwave(e.pos, 4, FX.LIME, 0.35); FX.popup("SHIELD CRACKED", "#b8f55a"); AudioSys.play("shatter", {"vol": 0.5, "rate": 1.4})
+		GAME.add_score(80, by if by else "HIT"); ST.gain("kill", 6); REC.ev("jetCrack", by if by else "")
+		return false
+	e.alive = false; e.j.visible = false; e.respawn = U.rand(3, 5)
 	FX.burst_shapes(e.pos, 40, [0, 1, 2, 5], 26, FX.LIME); FX.sparks(e.pos, 30, FX.GOLD, 30); FX.shockwave(e.pos, 7, FX.LIME, 0.5)
 	AudioSys.explode(e.pos); GAME.kills += 1
-	GAME.add_score(300, by if by else "TAKEDOWN")
+	GAME.add_score(450 if e.hpMax > 1 else 300, by if by else "TAKEDOWN")
 	ST.gain(_style_tag(by), 28 if by == "RAM" else (14 if by == "HOMING" else 22))
 	TUT.note("kill", by)
+	return true
+
+## turn a unit vector toward `want` by at most `mx` radians
+func turn_toward(v: Vector3, want: Vector3, mx: float) -> Vector3:
+	var ang := acos(clampf(v.dot(want), -1, 1))
+	if ang < 1e-4: return v
+	if ang <= mx: return want
+	var ax := v.cross(want)
+	if ax.length_squared() < 1e-8: ax = (Vector3.UP if absf(v.y) < 0.9 else Vector3.RIGHT).cross(v)
+	return v.rotated(ax.normalized(), mx)
 
 func update_enemies(dt: float) -> void:
+	var live := enemies.filter(func(x): return x.alive)
 	for e in enemies:
 		if not e.alive:
 			e.respawn -= dt
 			var ph: Dictionary = ST.phase()
-			var alive := enemies.filter(func(x): return x.alive).size()
 			var early: bool = not TUT.active and ST.DIR.phase == 0 and GAME.time < ST.PHASES[0].firstEnemy
-			if e.respawn <= 0 and GAME.state == "play" and alive < ph.enemies and not early: spawn_enemy(e)
+			if e.respawn <= 0 and GAME.state == "play" and live.size() < ph.enemies and not early: spawn_enemy(e); live.append(e)
 			continue
-		e.spawnT = maxf(0.0, e.spawnT - dt)
+		e.spawnT = maxf(0.0, e.spawnT - dt); e.flash = maxf(0.0, e.flash - dt); e.stT -= dt
 		var to_p: Vector3 = P.pos - e.pos
 		var dP := to_p.length()
-		e.wpT -= dt
-		if e.wpT <= 0 or e.pos.distance_to(e.wp) < 6:
-			e.wp = World.random_free_spot(World.CORE_R + 10, World.R * 0.8); e.wpT = U.rand(4, 8)
-		var target: Vector3 = e.wp
-		if dP < 55 and P.mode != "supercut": target = P.pos + P.fwd * 12 + P.right * (sin(Ctl.now + e.cd) * 8)
+		var dir_p := to_p / maxf(dP, 1e-3)
+		var player_on_me: bool = P.mode == "fly" and dP < 45 and P.fwd.dot(-dir_p) > 0.94   # your nose is on it
+		var busy: bool = P.mode in ["supercut", "puzzle", "loadup"] or GAME.state != "play"
+		# ---- state changes ----
+		if busy:
+			if e.st != "patrol": e.st = "patrol"; e.tele = 0.0; e.shots = 0
+		elif e.st == "patrol" and dP < JET.see: e.st = "attack"; e.stT = U.rand(5, 8); Coach.hint("jets")
+		elif (e.st == "attack" or e.st == "aim") and player_on_me and randf() < dt * 1.6: e.st = "evade"; e.stT = U.rand(0.9, 1.5); e.tele = 0.0
+		elif e.st == "attack" and (dP < 12 or (dP < 22 and e.fwd.dot(dir_p) > 0.7 and P.vel.dot(dir_p) < 0)): e.st = "extend"; e.stT = U.rand(1.0, 1.8)   # overshoot or about to ram: blow past
+		elif (e.st == "extend" or e.st == "evade") and e.stT <= 0: e.st = "attack" if dP < JET.see * 1.3 else "patrol"
+		elif e.st == "attack" and dP > JET.see * 1.4: e.st = "patrol"
+		# ---- where it wants to go ----
+		var target := Vector3.ZERO
+		var spd: float = JET.attack
+		var turn: float = JET.turn
+		match e.st:
+			"patrol":
+				e.wpT -= dt
+				if e.wpT <= 0 or e.pos.distance_to(e.wp) < 6: e.wp = World.random_free_spot(World.CORE_R + 10, World.R * 0.8); e.wpT = U.rand(4, 8)
+				target = e.wp; spd = JET.patrol; turn = 1.6
+			"attack", "aim":
+				var sl: Array = JET_SLOTS[e.slot % JET_SLOTS.size()]
+				target = P.pos + P.right * sl[0] + P.up * sl[1] + P.fwd * sl[2] + P.vel * minf(1.2, dP / 45.0)
+				if dP < 40: target = target.lerp(P.pos + P.vel * (dP / JET.bolt), 0.65)   # close in: point the nose at your lead
+				spd = JET.attack + 6.0 if dP > 40 else JET.attack
+			"extend":
+				target = e.pos + e.fwd * 30 - dir_p * 10; spd = JET.extend; turn = 1.2
+			"evade":
+				var side: Vector3 = e.fwd.cross(e.up).normalized()
+				target = e.pos + e.fwd * 20 + side * (sin(Ctl.now * 7 + e.i) * 14) + e.up * (cos(Ctl.now * 5 + e.i) * 8) - dir_p * 12
+				spd = JET.extend; turn = 3.2; e.roll += dt * 9
 		var want: Vector3 = (target - e.pos).normalized()
+		# keep off the core, the shell, the mini-planets and each other
 		var cd: float = e.pos.length()
-		if cd < World.CORE_R + 6: want = (want + e.pos.normalized() * 2).normalized()
-		if cd > World.R - 8: want = (want - e.pos.normalized() * 2).normalized()
+		if cd < World.CORE_R + 7: want = (want + e.pos.normalized() * 2).normalized()
+		if cd > World.R - 9: want = (want - e.pos.normalized() * 2).normalized()
 		for o in World.orbs:
-			var od: float = e.pos.distance_to(o.pos)
-			if od < o.r + 5: want = (want + (e.pos - o.pos).normalized() * 2).normalized()
-		e.fwd = e.fwd.lerp(want, 1.0 - exp(-1.8 * dt)).normalized()
+			if o.alive and e.pos.distance_to(o.pos) < o.r + 6: want = (want + (e.pos - o.pos).normalized() * 2).normalized()
+		for f in live:
+			if not is_same(f, e):
+				var fd: float = e.pos.distance_to(f.pos)
+				if fd < 7: want = (want + (e.pos - f.pos).normalized() * ((7 - fd) / 7)).normalized()
+		e.fwd = turn_toward(e.fwd, want, turn * dt)
 		e.up = e.up.lerp(e.pos.normalized(), 1.0 - exp(-2 * dt))
 		e.up = (e.up - e.fwd * e.up.dot(e.fwd)).normalized()
-		e.speed = 26.0 if dP < 55 else 22.0
+		e.speed = U.damp(e.speed, spd, 2.5, dt)
 		e.pos += e.fwd * e.speed * dt
-		# shoot
+		# ---- guns: telegraph, then a burst with lead ----
 		e.cd -= dt
-		if e.cd <= 0 and dP < 60 and dP > 8 and e.fwd.dot(to_p.normalized()) > 0.8 and e.spawnT <= 0:
-			var lead: Vector3 = P.pos + P.fwd * (P.speed * dP / 40)
-			fire_proj(e.pos + e.fwd * 1.5, lead - e.pos, 40)
-			e.cd = U.rand(1.8, 3.2)
+		var on_target: bool = dP < 75 and dP > 7 and e.fwd.dot(dir_p) > 0.93 and e.spawnT <= 0 and not busy
+		var aiming_n := live.filter(func(x): return x.st == "aim").size()   # fair: at most two jets shoot at you at once
+		if e.st == "attack" and on_target and e.cd <= 0 and aiming_n < JET.maxAim: e.st = "aim"; e.tele = JET.tele; AudioSys.play("lock", {"vol": 0.25, "rate": 1.7, "jit": 0.0})
+		if e.st == "aim":
+			if e.tele > 0:
+				e.tele -= dt
+				if e.tele <= 0: e.shots = JET.burst; e.shotT = 0.0
+			elif e.shots > 0:
+				e.shotT -= dt
+				if e.shotT <= 0:
+					var lead: Vector3 = P.pos + P.vel * (0.8 * dP / JET.bolt)   # leads you, not perfectly
+					fire_proj(e.pos + e.fwd * 1.5, (lead - e.pos).normalized() + U.rand_unit() * JET.spread, JET.bolt)
+					e.shots -= 1; e.shotT = JET.gap
+			else:
+				e.cd = U.rand(JET.cd[0], JET.cd[1]) * (0.8 if ST.DIR.phase >= 3 else 1.0)
+				e.st = "extend" if randf() < 0.45 else "attack"; e.stT = U.rand(0.8, 1.4)
 		# ram / collide with player
 		if e.pos.distance_to(P.pos) < 2.4:
 			if P.ram or P.mode == "supercut": kill_enemy(e, "RAM")
@@ -159,8 +233,11 @@ func update_enemies(dt: float) -> void:
 		var j: Jet = e.j
 		j.basis = Basis(right, e.up, e.fwd).scaled_local(Vector3.ONE * 0.85 * (1 - e.spawnT * 0.8))
 		j.position = e.pos
-		j.inner.rotation.z = sin(Ctl.now * 2 + e.cd) * 0.3
-		for f in j.flames: f.scale = Vector3(1, 1, 0.8 + randf() * 0.4)
+		if e.st != "evade": e.roll = U.damp(e.roll, roundf(e.roll / TAU) * TAU, 4, dt)
+		j.inner.rotation.z = e.roll + sin(Ctl.now * 2 + e.i) * 0.3
+		for f2 in j.flames: f2.scale = Vector3(1, 1, (0.8 + randf() * 0.4) * (e.speed / 26.0))
+		j.body_mat.emission_enabled = e.flash > 0
+		if e.flash > 0: j.body_mat.emission = Color(e.flash * 3, e.flash * 3, e.flash * 2)
 
 # ---------- probes ----------
 func spawn_probe(from: Vector3) -> void:
@@ -342,6 +419,10 @@ func update_orbs(dt: float) -> void:
 		var exposed: float = o.get("exposed", 0.0)
 		o.glyph.rotate_object_local(Vector3.BACK, dt * (6.0 if exposed > 0 else (3.5 if o.state == "telegraph" else 0.5)))
 		var dP: float = P.pos.distance_to(o.pos)
+		# riding a mini-planet puts the camera inside its glyph disc and rail: dim them up close so they do not white out the view
+		var near_k := 0.18 + 0.82 * U.smooth(9, 26, GAME.camera.global_position.distance_to(o.pos))
+		o.glyphMat.set_shader_parameter("energy", near_k)
+		o.zone_mat.set_shader_parameter("uFade", o.fade * (0.35 + 0.65 * near_k))
 		if exposed > 0:
 			o.exposed -= dt; o.state = "idle"; o.t = 0.0
 			var fl := 0.5 + 0.5 * sin(Ctl.now * 18)

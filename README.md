@@ -2,6 +2,20 @@
 
 This is a Godot 4.5 port of the PC web build (pc-v4.2, [Ultrablast-turbo-pc](https://github.com/Bossmanting-crypto/Ultrablast-turbo-pc)), written in GDScript with the Forward+ renderer. The title screen shows **BUILD GODOT-1**, and every playtest export records it too.
 
+## v5 flight physics (godot-2, same as web pc-v5)
+
+These changes come from playtest feedback: "good gravity on the mini-planets so I can ride them to refuel till escape velocity; it flies itself when I leave the controls; pitch and yaw too restricted; enemies need to be more aggressive; when fuel runs out it falls".
+
+- **Physics.** Velocity is a real vector with grip, so hard turns drift. The core and every mini-planet exert real gravity. Climbing costs speed and diving gains it.
+- **Riding and fuel.** Fly low over a planet to ride its surface and refuel. To leave, push past escape speed and pull up, or fire a blast. Cruising sips fuel, thrust burns it and homing dashes cost some. With an empty tank the engine cuts out and you fall. Crystals add a sip of fuel.
+- **Turning.** Pitch and yaw are free (about 130 to 150 degrees per second) with a little angular inertia. Nothing steers for you in open space.
+- **Mouse.** The mouse acts as a virtual stick that re-centres. Clicking captures the pointer, and menus and puzzles release it.
+- **Enemy jets.**
+  - They work as a dogfight loop: patrol, attack from slots around you, a 0.45 s red-tick telegraph before each 3-bolt burst (imperfect lead, slight spread, at most two jets firing at once), extending after passes, and jinking when you target them.
+  - There are 2, 4, 5 and 7 jets per phase, with 2 hp from phase 3.
+  - Bolt hits are swept.
+- **Tests.** `tools/autotest.gd` has a `physics` scenario that measures all of the above.
+
 ## Run it
 
 1. Install [Godot 4.5](https://godotengine.org/download) (the standard build; the .NET build isn't needed).
